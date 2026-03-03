@@ -22,6 +22,7 @@ import { skillCategories } from "@/lib/skills-data"
 import { uploadToCloudinary, validateImageFile, uploadDocumentToCloudinary, validateDocumentFile } from "@/lib/upload"
 import type { NGOProfile } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ImageCropper } from "@/components/ui/image-cropper"
 
 const teamSizes = [
   "1-5",
@@ -59,6 +60,8 @@ export default function NGOProfilePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [verificationDocs, setVerificationDocs] = useState<Array<{ name: string; url: string; type: string }>>([])
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [cropperOpen, setCropperOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     orgName: "",
@@ -157,12 +160,29 @@ export default function NGOProfilePage() {
       return
     }
 
+    // Create a preview URL and open the cropper
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+    // Reset the input so the same file can be re-selected
+    e.target.value = ""
+  }
+
+  const handleCroppedLogo = async (croppedBlob: Blob) => {
+    setCropperOpen(false)
+    setCropImageSrc(null)
     setUploadingLogo(true)
     toast.loading("Uploading logo...", { id: "logo-upload" })
 
     try {
+      // Convert blob to File for the upload function
+      const croppedFile = new File([croppedBlob], "logo.jpg", { type: "image/jpeg" })
+
       // Upload with signed request
-      const uploadResult = await uploadToCloudinary(file, "ngo_logos", {
+      const uploadResult = await uploadToCloudinary(croppedFile, "ngo_logos", {
         onProgress: (percent) => {
           // Could show progress here if needed
         },
@@ -439,6 +459,22 @@ export default function NGOProfilePage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Image Cropper Dialog */}
+                  {cropImageSrc && (
+                    <ImageCropper
+                      open={cropperOpen}
+                      onClose={() => {
+                        setCropperOpen(false)
+                        setCropImageSrc(null)
+                      }}
+                      imageSrc={cropImageSrc}
+                      onCropComplete={handleCroppedLogo}
+                      aspectRatio={1}
+                      title={dict.ngo?.profile?.adjustLogo || "Adjust Logo"}
+                      description={dict.ngo?.profile?.dragToReposition || "Drag to reposition and resize the crop area"}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
