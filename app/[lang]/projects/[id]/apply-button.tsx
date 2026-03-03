@@ -29,6 +29,7 @@ interface ApplyButtonProps {
   volunteerName?: string
   volunteerSkills?: string[]
   volunteerBio?: string
+  deadline?: Date | string
 }
 
 export function ApplyButton({ 
@@ -40,6 +41,7 @@ export function ApplyButton({
   volunteerName = "",
   volunteerSkills = [],
   volunteerBio = "",
+  deadline,
 }: ApplyButtonProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
@@ -47,6 +49,10 @@ export function ApplyButton({
   const [submitted, setSubmitted] = useState(hasApplied)
   const [error, setError] = useState<string | null>(null)
   const [limitReached, setLimitReached] = useState(false)
+
+  // Check if deadline has passed
+  const isDeadlinePassed = deadline ? new Date(deadline) < new Date() : false
+  const isDisabled = hasApplied || isDeadlinePassed
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
@@ -91,9 +97,9 @@ export function ApplyButton({
         <Button 
           className="w-full bg-primary hover:bg-primary/90" 
           size="lg"
-          disabled={hasApplied}
+          disabled={isDisabled}
         >
-          {hasApplied ? "Applied" : "Apply Now"}
+          {hasApplied ? "Applied" : isDeadlinePassed ? "Deadline Passed" : "Apply Now"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg bg-background">

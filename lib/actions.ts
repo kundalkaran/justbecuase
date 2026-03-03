@@ -1098,6 +1098,15 @@ export async function applyToProject(
       return { success: false, error: "This project is no longer accepting applications" }
     }
 
+    // Check if project deadline has passed
+    if (project.deadline) {
+      const deadlineDate = new Date(project.deadline)
+      const currentDate = new Date()
+      if (currentDate > deadlineDate) {
+        return { success: false, error: "The application deadline for this project has passed" }
+      }
+    }
+
     const applicationData: Omit<Application, "_id"> = {
       projectId,
       volunteerId: user.id,

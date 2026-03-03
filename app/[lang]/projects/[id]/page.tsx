@@ -368,6 +368,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                       volunteerName={volunteerProfile?.name || ""}
                       volunteerSkills={volunteerProfile?.skills?.map((s: any) => s.subskillId || s.categoryId || "") || []}
                       volunteerBio={volunteerProfile?.bio || ""}
+                      deadline={project.deadline}
                     />
                   ) : (
                     <Button className="w-full" disabled>
