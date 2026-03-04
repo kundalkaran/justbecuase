@@ -78,7 +78,7 @@ function ProjectsContent() {
   // Debounced unified search
   useEffect(() => {
     const trimmed = searchQuery.trim()
-    if (trimmed.length < 1) {
+    if (trimmed.length < 2) {
       setUnifiedMatchedIds(null)
       setUnifiedRelevanceOrder(new Map())
       return
@@ -92,12 +92,13 @@ function ProjectsContent() {
       setIsUnifiedSearching(true)
       try {
         const res = await fetch(
-          `/api/unified-search?q=${encodeURIComponent(trimmed)}&types=opportunity&limit=50`,
+          `/api/unified-search?q=${encodeURIComponent(trimmed)}&types=opportunity&limit=100`,
           { signal: controller.signal }
         )
         const data = await res.json()
         if (data.success && !controller.signal.aborted) {
-          const ids = (data.results || []).map((r: any) => r.id)
+          // Use mongoId for reliable cross-referencing with local project list
+          const ids = (data.results || []).map((r: any) => r.mongoId || r.id)
           setUnifiedMatchedIds(ids)
           const orderMap = new Map<string, number>()
           ids.forEach((id: string, idx: number) => orderMap.set(id, ids.length - idx))
@@ -184,7 +185,7 @@ function ProjectsContent() {
     let result = [...projects]
     
     // Search filter — powered by unified search API
-    if (searchQuery.trim()) {
+    if (searchQuery.trim().length >= 2) {
       if (unifiedMatchedIds !== null) {
         // API results ready — filter by matched IDs
         result = result.filter((project) => {
@@ -192,17 +193,16 @@ function ProjectsContent() {
           return unifiedMatchedIds.includes(projectId)
         })
       } else {
-        // API loading — basic client-side fallback so results don't flash empty
-        const query = searchQuery.toLowerCase()
+        // API loading — basic client-side fallback (title + skills only, not description)
+        const queryTerms = searchQuery.toLowerCase().split(/\s+/).filter(t => t.length >= 2)
         result = result.filter((project) => {
-          const titleMatch = project.title?.toLowerCase().includes(query)
-          const descMatch = project.description?.toLowerCase().includes(query)
-          const skillsMatch = project.skillsRequired?.some(s => 
-            s.categoryId?.toLowerCase().includes(query) || 
-            s.subskillId?.toLowerCase().includes(query)
-          )
-          const ngoMatch = project.ngo?.name?.toLowerCase().includes(query)
-          return titleMatch || descMatch || skillsMatch || ngoMatch
+          const title = project.title?.toLowerCase() || ""
+          const ngoName = project.ngo?.name?.toLowerCase() || ""
+          const skillTexts = project.skillsRequired?.map(s => 
+            `${s.categoryId} ${s.subskillId}`.toLowerCase()
+          ).join(" ") || ""
+          const searchable = `${title} ${ngoName} ${skillTexts}`
+          return queryTerms.some(term => searchable.includes(term))
         })
       }
     }
@@ -244,8 +244,9 @@ function ProjectsContent() {
       })
     }
     
-    // Sorting
-    switch (sortBy) {
+    // Sorting — auto-use relevance when searching
+    const effectiveSort = (searchQuery.trim().length >= 2 && unifiedMatchedIds !== null && sortBy === "newest") ? "relevant" : sortBy
+    switch (effectiveSort) {
       case "newest":
         result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         break
@@ -262,7 +263,7 @@ function ProjectsContent() {
       case "relevant":
       default:
         // When search is active and API results are available, sort by API relevance
-        if (searchQuery.trim() && unifiedMatchedIds !== null) {
+        if (searchQuery.trim().length >= 2 && unifiedMatchedIds !== null) {
           result.sort((a, b) => {
             const idA = a._id?.toString() || a.id || ""
             const idB = b._id?.toString() || b.id || ""

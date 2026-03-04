@@ -2485,7 +2485,9 @@ export async function browseProjects(filters?: {
   projectType?: string
 }) {
   // Get active projects from database
-  const allProjects = await projectsDb.findActive({}, { limit: 100 })
+  // Fetch all active projects (no cap — the listing page needs a full set
+  // so that Elasticsearch search-result IDs can always be matched locally)
+  const allProjects = await projectsDb.findActive({}, { sort: { createdAt: -1 } as any })
   
   // Filter in JavaScript since some filtering might be needed
   let filteredProjects = allProjects.filter(p => {
@@ -2510,9 +2512,6 @@ export async function browseProjects(filters?: {
     
     return true
   })
-  
-  // Limit results
-  filteredProjects = filteredProjects.slice(0, 50)
   
   // Fetch NGO info for each project
   const ngoIds = [...new Set(filteredProjects.map(p => p.ngoId).filter(Boolean))]
