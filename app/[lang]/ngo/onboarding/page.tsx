@@ -751,7 +751,7 @@ export default function NGOOnboardingPage() {
                         {selected && <CheckCircle className="h-4 w-4 text-secondary" />}
                       </div>
                       {selected && (
-                        <div className="mt-2 flex gap-1">
+                        <div className="mt-2 flex flex-wrap gap-1">
                           <Badge
                             variant={skill?.priority === "must-have" ? "default" : "outline"}
                             className="cursor-pointer text-xs"

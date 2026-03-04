@@ -130,6 +130,7 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-XSS-Protection", "1; mode=block")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  // Allow geolocation for the same origin so in-browser location APIs work (mobile browsers)
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
   return response
 }
