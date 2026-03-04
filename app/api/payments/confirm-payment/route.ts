@@ -63,22 +63,30 @@ export async function POST(request: NextRequest) {
     // Activate subscription
     if (isNgoPlan) {
       const profile = await ngoProfilesDb.findByUserId(userId)
-      if (profile) {
-        await ngoProfilesDb.update(userId, {
-          subscriptionPlan: isPro ? "pro" : "free",
-          subscriptionExpiry,
-          monthlyUnlocksUsed: 0,
-        })
+      if (!profile) {
+        return NextResponse.json(
+          { error: "NGO profile not found. Please complete onboarding first." },
+          { status: 400 }
+        )
       }
+      await ngoProfilesDb.update(userId, {
+        subscriptionPlan: isPro ? "pro" : "free",
+        subscriptionExpiry,
+        monthlyUnlocksUsed: 0,
+      })
     } else {
       const profile = await volunteerProfilesDb.findByUserId(userId)
-      if (profile) {
-        await volunteerProfilesDb.update(userId, {
-          subscriptionPlan: isPro ? "pro" : "free",
-          subscriptionExpiry,
-          monthlyApplicationsUsed: 0,
-        })
+      if (!profile) {
+        return NextResponse.json(
+          { error: "Impact Agent profile not found. Please complete onboarding first." },
+          { status: 400 }
+        )
       }
+      await volunteerProfilesDb.update(userId, {
+        subscriptionPlan: isPro ? "pro" : "free",
+        subscriptionExpiry,
+        monthlyApplicationsUsed: 0,
+      })
     }
 
     // Amount in whole units

@@ -36,7 +36,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ lan
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-2">{dict.admin?.dashboard?.title || "Dashboard"}</h1>
           <p className="text-muted-foreground">
@@ -44,8 +44,8 @@ export default async function AdminDashboard({ params }: { params: Promise<{ lan
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          <span>{(dict.admin?.dashboard?.lastUpdated || "Last updated: {date}").replace("{date}", new Date().toLocaleString())}</span>
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span className="whitespace-nowrap">{(dict.admin?.dashboard?.lastUpdated || "Last updated: {date}").replace("{date}", new Date().toLocaleString())}</span>
         </div>
       </div>
 

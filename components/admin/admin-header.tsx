@@ -42,7 +42,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <LocaleLink href="/admin/dashboard" className="flex items-center gap-2">
           <Image src="/logo-main.png" alt="JBC Logo" width={160} height={78} className="h-10 w-auto" />
-          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>
+          <span className="hidden sm:inline text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>
         </LocaleLink>
       </div>
 
@@ -50,7 +50,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         <Button variant="ghost" size="sm" asChild>
           <LocaleLink href="/" target="_blank" className="flex items-center gap-1">
             <ExternalLink className="h-4 w-4" />
-            View Site
+            <span className="hidden sm:inline">View Site</span>
           </LocaleLink>
         </Button>
 

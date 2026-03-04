@@ -56,6 +56,7 @@ export default async function NGODashboard({ params }: { params: Promise<{ lang:
       <Suspense fallback={null}>
         <WelcomeToast />
       </Suspense>
+      <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Welcome Section */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
@@ -73,58 +74,58 @@ export default async function NGODashboard({ params }: { params: Promise<{ lang:
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <FolderKanban className="h-6 w-6 text-primary" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FolderKanban className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{activeProjects.length}</p>
-                    <p className="text-sm text-muted-foreground">{dict.ngo?.common?.activeOpportunities || "Active Opportunities"}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{activeProjects.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{dict.ngo?.common?.activeOpportunities || "Active Opportunities"}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                    <Users className="h-6 w-6 text-secondary" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{pendingApplications.length}</p>
-                    <p className="text-sm text-muted-foreground">{dict.ngo?.common?.pendingApplications || "Pending Applications"}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{pendingApplications.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{dict.ngo?.common?.pendingApplications || "Pending Applications"}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{completedProjects.length}</p>
-                    <p className="text-sm text-muted-foreground">{dict.ngo?.common?.completed || "Completed"}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{completedProjects.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{dict.ngo?.common?.completed || "Completed"}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Users className="h-6 w-6 text-primary" />
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{applications.length}</p>
-                    <p className="text-sm text-muted-foreground">{dict.ngo?.dashboard?.totalApplications || "Total Applications"}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{applications.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{dict.ngo?.dashboard?.totalApplications || "Total Applications"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -394,6 +395,7 @@ export default async function NGODashboard({ params }: { params: Promise<{ lang:
               </Card>
             </div>
           </div>
+      </div>
     </>
   )
 }

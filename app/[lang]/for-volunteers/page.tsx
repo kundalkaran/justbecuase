@@ -76,12 +76,12 @@ export default function ForVolunteersPage() {
                   </Button>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative overflow-hidden">
                 <img
                   src="/diverse-professionals-volunteering-laptop-teamwork.png"
                   alt="Impact agents collaborating"
-                  className="rounded-2xl shadow-2xl" />
-                <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-xl shadow-lg border border-border">
+                  className="rounded-2xl shadow-2xl w-full" />
+                <div className="absolute -bottom-4 left-2 md:-bottom-6 md:-left-6 bg-card p-3 md:p-4 rounded-xl shadow-lg border border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-success-light flex items-center justify-center">
                       <CheckCircle className="h-6 w-6 text-success" />

@@ -68,7 +68,7 @@ function CheckoutOrchestrator() {
   const user = session?.user
   const userRole = user?.role as string | undefined
 
-  const { ngoSubscription, volunteerSubscription } = useSubscriptionStore()
+  const { ngoSubscription, volunteerSubscription, setNGOSubscription, setVolunteerSubscription } = useSubscriptionStore()
   const {
     settings: platformSettings,
     isLoaded: settingsLoaded,
@@ -77,6 +77,7 @@ function CheckoutOrchestrator() {
   } = usePlatformSettingsStore()
 
   /* ---------- local state ---------- */
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false)
   const [couponInput, setCouponInput] = useState("")
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState("")
@@ -103,6 +104,19 @@ function CheckoutOrchestrator() {
         .catch(() => setLoaded(true))
     }
   }, [settingsLoaded, setSettings, setLoaded])
+
+  /* ---------- always refresh subscription status on checkout ---------- */
+  useEffect(() => {
+    if (!user) { setSubscriptionLoaded(true); return }
+    fetch("/api/user/subscription")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ngoSubscription) setNGOSubscription(data.ngoSubscription)
+        if (data.volunteerSubscription) setVolunteerSubscription(data.volunteerSubscription)
+      })
+      .catch(() => {})
+      .finally(() => setSubscriptionLoaded(true))
+  }, [user, setNGOSubscription, setVolunteerSubscription])
 
   /* ---------- redirect unauthenticated ---------- */
   useEffect(() => {
@@ -277,7 +291,7 @@ function CheckoutOrchestrator() {
   }, [publishableKey])
 
   /* ---------- early returns ---------- */
-  if (!settingsLoaded || session === undefined) {
+  if (!settingsLoaded || session === undefined || !subscriptionLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -353,17 +367,17 @@ function CheckoutOrchestrator() {
   const PlanIcon = plan.icon
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-6 sm:py-8">
       <div className="container max-w-5xl mx-auto px-4">
         {/* Back button */}
         <button
           onClick={() => router.push(localePath("/pricing", locale))}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
         >
           <ArrowLeft className="h-4 w-4" /> {dict.checkout?.backToPricing || "Back to Pricing"}
         </button>
 
-        <div className="grid md:grid-cols-5 gap-8">
+        <div className="grid md:grid-cols-5 gap-6 sm:gap-8">
           {/* ---- Left: Order summary ---- */}
           <div className="md:col-span-2 space-y-6">
             {/* Plan card */}

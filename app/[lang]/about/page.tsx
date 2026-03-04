@@ -187,24 +187,24 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         {/* Impact Stats */}
         <section className="py-16">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="p-6 rounded-2xl bg-primary/10 text-center">
-                <p className="text-4xl font-bold text-primary mb-2">{impactMetrics.volunteers.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">{a.statAgents || "Active Impact Agents"}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+              <div className="p-4 sm:p-6 rounded-2xl bg-primary/10 text-center">
+                <p className="text-2xl sm:text-4xl font-bold text-primary mb-2">{impactMetrics.volunteers.toLocaleString()}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{a.statAgents || "Active Impact Agents"}</p>
               </div>
-              <div className="p-6 rounded-2xl bg-secondary/10 text-center">
-                <p className="text-4xl font-bold text-secondary mb-2">{impactMetrics.projectsCompleted}</p>
-                <p className="text-sm text-muted-foreground">{a.statCompleted || "Opportunities Completed"}</p>
+              <div className="p-4 sm:p-6 rounded-2xl bg-secondary/10 text-center">
+                <p className="text-2xl sm:text-4xl font-bold text-secondary mb-2">{impactMetrics.projectsCompleted}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{a.statCompleted || "Opportunities Completed"}</p>
               </div>
-              <div className="p-6 rounded-2xl bg-success-light text-center">
-                <p className="text-4xl font-bold text-success mb-2">{impactMetrics.ngosSupported}</p>
-                <p className="text-sm text-muted-foreground">{a.statNGOs || "NGOs Supported"}</p>
+              <div className="p-4 sm:p-6 rounded-2xl bg-success-light text-center">
+                <p className="text-2xl sm:text-4xl font-bold text-success mb-2">{impactMetrics.ngosSupported}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{a.statNGOs || "NGOs Supported"}</p>
               </div>
-              <div className="p-6 rounded-2xl bg-accent text-center">
-                <p className="text-4xl font-bold text-accent-foreground mb-2">
+              <div className="p-4 sm:p-6 rounded-2xl bg-accent text-center">
+                <p className="text-2xl sm:text-4xl font-bold text-accent-foreground mb-2">
                   ${(impactMetrics.valueGenerated / 1000000).toFixed(1)}M
                 </p>
-                <p className="text-sm text-muted-foreground">{a.statValue || "Value Created"}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{a.statValue || "Value Created"}</p>
               </div>
             </div>
           </div>

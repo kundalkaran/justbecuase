@@ -3,6 +3,10 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { ngoProfilesDb, volunteerProfilesDb } from "@/lib/database"
 
+/**
+ * Returns subscription info for the current user.
+ * Checks expiry dates — if a subscription has expired, returns "free" instead of "pro".
+ */
 export async function GET() {
   try {
     const session = await auth.api.getSession({
@@ -15,6 +19,7 @@ export async function GET() {
 
     const user = session.user
     const role = user.role as string
+    const now = new Date()
 
     if (role === "ngo") {
       const profile = await ngoProfilesDb.findByUserId(user.id)
@@ -22,11 +27,16 @@ export async function GET() {
         return NextResponse.json({ ngoSubscription: null })
       }
       
+      // Check if subscription has expired
+      const isExpired = profile.subscriptionExpiry && new Date(profile.subscriptionExpiry) < now
+      const effectivePlan = isExpired ? "free" : (profile.subscriptionPlan || "free")
+      
       return NextResponse.json({
         ngoSubscription: {
-          plan: profile.subscriptionPlan || "free",
+          plan: effectivePlan,
           unlocksUsed: profile.monthlyUnlocksUsed || 0,
           expiryDate: profile.subscriptionExpiry?.toISOString(),
+          isExpired: !!isExpired,
         }
       })
     } else if (role === "volunteer") {
@@ -35,11 +45,16 @@ export async function GET() {
         return NextResponse.json({ volunteerSubscription: null })
       }
       
+      // Check if subscription has expired
+      const isExpired = profile.subscriptionExpiry && new Date(profile.subscriptionExpiry) < now
+      const effectivePlan = isExpired ? "free" : (profile.subscriptionPlan || "free")
+      
       return NextResponse.json({
         volunteerSubscription: {
-          plan: profile.subscriptionPlan || "free",
+          plan: effectivePlan,
           applicationsUsed: profile.monthlyApplicationsUsed || 0,
           expiryDate: profile.subscriptionExpiry?.toISOString(),
+          isExpired: !!isExpired,
         }
       })
     }

@@ -36,7 +36,7 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
               </CardHeader>
               <CardContent>
                 <form className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label htmlFor="first-name" className="text-sm font-medium">{c.firstName || "First name"}</label>
                       <Input id="first-name" placeholder="John" />

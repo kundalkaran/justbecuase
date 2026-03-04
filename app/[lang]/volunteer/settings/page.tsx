@@ -804,7 +804,7 @@ export default function VolunteerSettingsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg">
                       <div>
                         <p className="font-medium">{dict.volunteer?.settings?.downloadYourData || "Download Your Data"}</p>
                         <p className="text-sm text-muted-foreground">
@@ -815,6 +815,7 @@ export default function VolunteerSettingsPage() {
                         variant="outline" 
                         onClick={handleDownloadData}
                         disabled={downloadingData}
+                        className="shrink-0"
                       >
                         {downloadingData && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                         {downloadingData ? (dict.volunteer?.settings?.preparing || "Preparing...") : (dict.volunteer?.settings?.downloadData || "Download Data")}
@@ -832,7 +833,7 @@ export default function VolunteerSettingsPage() {
                   </CardHeader>
                   <CardContent>
                     {!showDeleteConfirm ? (
-                      <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950">
                         <div>
                           <p className="font-medium text-red-600">{dict.volunteer?.settings?.deleteAccount || "Delete Account"}</p>
                           <p className="text-sm text-muted-foreground">
@@ -842,6 +843,7 @@ export default function VolunteerSettingsPage() {
                         <Button
                           variant="destructive"
                           onClick={() => setShowDeleteConfirm(true)}
+                          className="shrink-0"
                         >
                           {dict.volunteer?.settings?.deleteAccount || "Delete Account"}
                         </Button>

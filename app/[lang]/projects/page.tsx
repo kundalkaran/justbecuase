@@ -398,7 +398,7 @@ function ProjectsContent() {
               </Sheet>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-28 sm:w-40">
                   <SelectValue placeholder={dict.projectsListing?.sortBy || "Sort by"} />
                 </SelectTrigger>
                 <SelectContent>

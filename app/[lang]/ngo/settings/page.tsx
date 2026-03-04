@@ -577,15 +577,15 @@ export default function NGOSettingsPage() {
                         {transactions.map((tx, i) => (
                           <div
                             key={i}
-                            className="flex items-center justify-between p-3 border rounded-lg"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg"
                           >
-                            <div>
-                              <p className="font-medium">{tx.description}</p>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{tx.description}</p>
                               <p className="text-sm text-muted-foreground">
                                 {new Date(tx.createdAt).toLocaleDateString()}
                               </p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left sm:text-right shrink-0">
                               <p className="font-medium">{getCurrencySymbol(usePlatformSettingsStore.getState().settings?.currency || "USD")}{tx.amount}</p>
                               <Badge
                                 variant={tx.status === "completed" ? "default" : "secondary"}
@@ -760,7 +760,7 @@ export default function NGOSettingsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg">
                       <div>
                         <p className="font-medium">{dict.ngo?.settings?.downloadData || "Download Your Data"}</p>
                         <p className="text-sm text-muted-foreground">
@@ -771,6 +771,7 @@ export default function NGOSettingsPage() {
                         variant="outline" 
                         onClick={handleDownloadData}
                         disabled={downloadingData}
+                        className="shrink-0"
                       >
                         {downloadingData && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                         {downloadingData ? (dict.ngo?.settings?.preparing || "Preparing...") : (dict.ngo?.settings?.downloadDataBtn || "Download Data")}
@@ -788,14 +789,14 @@ export default function NGOSettingsPage() {
                   </CardHeader>
                   <CardContent>
                     {!showDeleteConfirm ? (
-                      <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-red-200 rounded-lg bg-red-50">
                         <div>
                           <p className="font-medium text-red-600">{dict.ngo?.settings?.deleteOrganization || "Delete Organization"}</p>
                           <p className="text-sm text-muted-foreground">
                             {dict.ngo?.settings?.deleteOrgDesc || "Permanently delete your organization account"}
                           </p>
                         </div>
-                        <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+                        <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)} className="shrink-0">
                           {dict.ngo?.settings?.deleteAccount || "Delete Account"}
                         </Button>
                       </div>

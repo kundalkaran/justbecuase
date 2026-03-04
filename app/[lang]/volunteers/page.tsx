@@ -420,7 +420,7 @@ export default function VolunteersPage() {
               </Sheet>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-32 sm:w-44">
                   <SelectValue placeholder={dict.volunteersListing?.sortBy || "Sort by"} />
                 </SelectTrigger>
                 <SelectContent>

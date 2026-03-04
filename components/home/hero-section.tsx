@@ -60,7 +60,7 @@ export function HeroSection() {
           {/* Registration Options */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
             {/* NGO Registration */}
-            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors min-w-[200px]">
+            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors w-full sm:w-auto sm:min-w-[200px]">
               <Building2 className="h-8 w-8 text-primary mb-2" />
               <span className="font-bold text-lg text-foreground">{hero.ngoTitle || "NGO"}</span>
               <span className="text-xs text-muted-foreground text-center">
@@ -74,7 +74,7 @@ export function HeroSection() {
             </div>
 
             {/* Volunteer Registration */}
-            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors min-w-[200px]">
+            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors w-full sm:w-auto sm:min-w-[200px]">
               <Users className="h-8 w-8 text-primary mb-2" />
               <span className="font-bold text-lg text-foreground">{hero.impactAgentTitle || "Impact Agent"}</span>
               <span className="text-xs text-muted-foreground text-center">

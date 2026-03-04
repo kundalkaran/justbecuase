@@ -38,12 +38,12 @@ export function DashboardContentHeader({ userType, userName, userAvatar }: Dashb
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <LocaleLink href="/" className="flex items-center">
-          <Image src="/logo-main.png" alt="JBC Logo" width={200} height={98} className="h-14 w-auto" />
+          <Image src="/logo-main.png" alt="JBC Logo" width={200} height={98} className="h-10 sm:h-14 w-auto" />
         </LocaleLink>
       </div>
 
       {/* Search - Desktop */}
-      <div className="hidden md:flex flex-1 max-w-md mx-8">
+      <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
         <UnifiedSearchBar
           variant="compact"
           placeholder={userType === "volunteer"
