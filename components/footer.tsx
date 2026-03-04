@@ -122,7 +122,7 @@ export function Footer() {
               </li>
               <li>
                 <LocaleLink href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
-                  {footer.blog || "Blogs"}
+                  {footer.blog || "Blogs Justbecause"}
                 </LocaleLink>
               </li>
               <li>
