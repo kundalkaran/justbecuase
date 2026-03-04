@@ -120,8 +120,6 @@ export default function NGOOnboardingPage() {
   // Use react-geolocated for geolocation
   const {
     coords,
-    isGeolocationAvailable,
-    isGeolocationEnabled,
     getPosition,
     positionError,
   } = useGeolocated({
@@ -289,21 +287,6 @@ export default function NGOOnboardingPage() {
     setVerificationDocuments(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Geolocation function using react-geolocated
-  const getExactLocation = async () => {
-    if (!isGeolocationAvailable) {
-      setError("Geolocation is not supported by your browser");
-      return;
-    }
-    if (!isGeolocationEnabled) {
-      setError("Geolocation is disabled. Please enable location services.");
-      return;
-    }
-    setError(""); // Clear any previous errors
-    setIsGettingLocation(true);
-    getPosition();
-  };
-
   // IP-based location detection (for fallback) — state/region level
   const getIPLocation = async () => {
     setError("");
@@ -341,17 +324,13 @@ export default function NGOOnboardingPage() {
     setError("");
     setIsGettingLocation(true);
     
-    if (!isGeolocationAvailable) {
+    if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       setIsGettingLocation(false);
       return;
     }
-    if (!isGeolocationEnabled) {
-      setError("Geolocation is disabled. Please enable location services.");
-      setIsGettingLocation(false);
-      return;
-    }
     
+    // This triggers the browser permission prompt if not yet granted
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;

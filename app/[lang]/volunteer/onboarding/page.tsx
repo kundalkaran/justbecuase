@@ -109,8 +109,6 @@ export default function VolunteerOnboardingPage() {
   // Use react-geolocated for geolocation
   const {
     coords,
-    isGeolocationAvailable,
-    isGeolocationEnabled,
     getPosition,
     positionError,
   } = useGeolocated({
@@ -120,37 +118,18 @@ export default function VolunteerOnboardingPage() {
   });
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
-  // Geolocation function using react-geolocated
-  const getExactLocation = async () => {
-    if (!isGeolocationAvailable) {
-      setError(dict.volunteer?.onboarding?.geoNotSupported || "Geolocation is not supported by your browser");
-      return;
-    }
-    if (!isGeolocationEnabled) {
-      setError(dict.volunteer?.onboarding?.geoDisabled || "Geolocation is disabled. Please enable location services.");
-      return;
-    }
-    setError(""); // Clear any previous errors
-    setIsGettingLocation(true);
-    getPosition();
-  };
-
   // Reverse geocode location using free Nominatim (OpenStreetMap) — state/region level
   const getGoogleLocation = async () => {
     setError("");
     setIsGettingLocation(true);
     
-    if (!isGeolocationAvailable) {
+    if (!navigator.geolocation) {
       setError(dict.volunteer?.onboarding?.geoNotSupported || "Geolocation is not supported by your browser");
       setIsGettingLocation(false);
       return;
     }
-    if (!isGeolocationEnabled) {
-      setError(dict.volunteer?.onboarding?.geoDisabled || "Geolocation is disabled. Please enable location services.");
-      setIsGettingLocation(false);
-      return;
-    }
     
+    // This triggers the browser permission prompt if not yet granted
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
