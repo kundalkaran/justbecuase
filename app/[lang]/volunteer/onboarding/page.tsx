@@ -135,18 +135,14 @@ export default function VolunteerOnboardingPage() {
       return;
     }
     
-    // Check current permission state via Permissions API
+    // Log current permission state for debugging (but never block — always try getCurrentPosition)
     try {
       if (navigator.permissions) {
         const permStatus = await navigator.permissions.query({ name: 'geolocation' });
         console.log('[GEO-DEBUG] Permission state BEFORE request:', permStatus.state);
-        
-        if (permStatus.state === 'denied') {
-          console.log('[GEO-DEBUG] Permission is DENIED by browser. User must reset in browser settings.');
-          setError("Location permission was previously denied. Please click the lock icon in your browser's address bar, allow location access, and reload the page.");
-          setIsGettingLocation(false);
-          return;
-        }
+        // 'granted' → will succeed immediately
+        // 'prompt'  → browser will show the permission popup
+        // 'denied'  → getCurrentPosition will fire error callback, but some browsers re-prompt
       } else {
         console.log('[GEO-DEBUG] navigator.permissions not available, skipping pre-check');
       }
