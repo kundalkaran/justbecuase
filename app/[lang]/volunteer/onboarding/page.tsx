@@ -572,7 +572,7 @@ export default function VolunteerOnboardingPage() {
                         {selected && <CheckCircle className="h-4 w-4 text-primary" />}
                       </div>
                       {selected && (
-                        <div className="mt-2 flex gap-1">
+                        <div className="mt-2 flex flex-wrap gap-1">
                           {experienceLevels.map((level) => {
                             const skill = selectedSkills.find(
                               (s) => s.categoryId === activeCategory && s.subskillId === subskill.id
