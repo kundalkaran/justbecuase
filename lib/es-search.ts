@@ -9,6 +9,8 @@
 // ============================================
 
 import esClient, { ES_INDEXES, type ESIndexName } from "./elasticsearch"
+import { skillCategories } from "./skills-data"
+import { findMatchingSkillIds } from "./search-indexes"
 
 // ============================================
 // TYPES
@@ -864,6 +866,10 @@ const CAUSE_KEYWORDS: Record<string, string[]> = {
 function cleanQueryForTextSearch(query: string): string {
   let cleaned = query
 
+  // Remove anything inside parentheses (tool names, extras) and slashes
+  cleaned = cleaned.replace(/\([^)]*\)/g, " ")
+  cleaned = cleaned.replace(/[\/\\]/g, " ")
+
   // Remove numeric experience patterns: "2 year experience", "5+ years of exp", "10 yrs"
   cleaned = cleaned.replace(/\b\d+\+?\s*(?:years?|yrs?|yr)\s*(?:of\s+)?(?:experience|exp)?\b/gi, " ")
 
@@ -1303,7 +1309,7 @@ function detectQueryIntent(query: string): QueryIntent {
 // QUERY BUILDERS
 // ============================================
 
-function buildSearchQuery(query: string, filters?: ESSearchParams["filters"]): Record<string, any> {
+export function buildSearchQuery(query: string, filters?: ESSearchParams["filters"]): Record<string, any> {
   const must: any[] = []
   const should: any[] = []
   const filterClauses: any[] = []
@@ -1338,11 +1344,40 @@ function buildSearchQuery(query: string, filters?: ESSearchParams["filters"]): R
   }
 
   // Use the expanded query for text matching (abbreviations resolved)
-  const searchText = expansion.expandedQuery || textQuery
+  let searchText = expansion.expandedQuery || textQuery
+
+  // Normalize the text a bit: collapse any duplicate tokens that might
+  // occur from expansions like "CSR Partnerships partnerships". This keeps
+  // the query from being polluted by repeated words.
+  const tokens = searchText.trim().split(/\s+/)
+  const seen = new Set<string>()
+  searchText = tokens
+    .filter((t) => {
+      const lower = t.toLowerCase()
+      if (seen.has(lower)) return false
+      seen.add(lower)
+      return true
+    })
+    .join(" ")
+
+  // Determine if this query matches any known skill names or IDs. We'll also
+  // collect the matching skill IDs, which we can use to *require* a result to
+  // actually contain that skill. This avoids generic hits like projects that
+  // merely mention "partnerships".
+  const matchedSkillIds = findMatchingSkillIds([searchText.toLowerCase()])
+  const isSkillQuery = matchedSkillIds.length > 0
+
+  console.log(`[ES Search] searchText="${searchText}" isSkillQuery=${isSkillQuery} skillIds=${matchedSkillIds}`)
 
   // Adaptive minimum_should_match based on cleaned word count
   const wordCount = searchText.split(/\s+/).length
   const minMatch = wordCount <= 2 ? "75%" : wordCount <= 4 ? "60%" : "40%"
+
+  // When the user types a very short query (3 characters or fewer) we
+  // want strict prefix matching and no fuzziness. Fuzzy matching on tiny
+  // terms causes noisy hits like "fim" → "financial".
+  const useFuzziness: any = searchText.length <= 3 ? 0 : "AUTO"
+  const prefixLen = searchText.length <= 3 ? 0 : 2
 
   // ============================================
   // MUST: Core text match — every result MUST match the cleaned query
@@ -1363,28 +1398,22 @@ function buildSearchQuery(query: string, filters?: ESSearchParams["filters"]): R
             query: searchText,
             type: "most_fields",
             fields: [
-              "name^10",
-              "name.exact^15",
-              "orgName^10",
-              "orgName.exact^15",
               "title^10",
               "title.exact^15",
-              "headline^6",
               "skillNames^12",
               "causeNames^6",
-              "tags^5",
-              "city^4",
-              "country^3",
-              "location^4",
+              "headline^6",
+              "name^8",
+              "orgName^8",
             ],
-            fuzziness: "AUTO",
-            prefix_length: 2,
+            fuzziness: useFuzziness,
+            prefix_length: prefixLen,
             operator: "or",
-            minimum_should_match: minMatch,
+            minimum_should_match: "1",
           },
         },
-        // Cross-fields: treats fields as one corpus
         {
+          // Cross-fields: treats fields as one corpus
           multi_match: {
             query: searchText,
             type: "cross_fields",
@@ -1399,18 +1428,33 @@ function buildSearchQuery(query: string, filters?: ESSearchParams["filters"]): R
             minimum_should_match: minMatch,
           },
         },
+        // If this query appears to be a skill search, also allow description to
+        // satisfy the MUST clause so projects mentioning the skill only in the
+        // description are returned.
+        ...(isSkillQuery ? [{
+          multi_match: {
+            query: searchText,
+            type: "most_fields",
+            fields: ["description"],
+            fuzziness: useFuzziness,
+            prefix_length: prefixLen,
+            operator: "or",
+          },
+        }] : []),
+        // When we actually recognized a specific skill, require the result to
+        // have that skill present. This stops generic projects (e.g. web
+        // development with a vague mention of "partnerships") from sneaking in.
+        ...(matchedSkillIds.length > 0 ? [{ terms: { skillIds: matchedSkillIds } }] : []),
         // Prefix matching for search-as-you-type
         {
           multi_match: {
             query: searchText,
             type: "bool_prefix",
             fields: [
-              "name^8",
-              "orgName^8",
               "title^8",
               "skillNames^8",
-              "causeNames^5",
-              "city^4",
+              "name^6",
+              "headline^5",
             ],
           },
         },

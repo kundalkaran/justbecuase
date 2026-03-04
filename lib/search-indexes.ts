@@ -210,7 +210,7 @@ for (const cat of SKILL_CATEGORIES) {
  * Given search terms like ["email"], find all matching skill subskillIds.
  * Uses synonym expansion: "ad campaign" → finds PPC, Google Ads, Meta Ads, etc.
  */
-function findMatchingSkillIds(searchTerms: string[]): string[] {
+export function findMatchingSkillIds(searchTerms: string[]): string[] {
   const matchedIds = new Set<string>()
   // Expand with synonym/related terms
   const expandedTerms = expandWithSynonyms(searchTerms)
@@ -957,6 +957,17 @@ const PROJECT_PROJECTION = {
 /**
  * Strategy 1: MongoDB $text search (fastest, uses text index)
  */
+// helper: remove any projects that lack one of the provided skillIds
+function filterProjectsBySkills(projects: any[], skillIds: string[]): any[] {
+  if (!skillIds || skillIds.length === 0) return projects
+  return projects.filter((proj) => {
+    const skills = proj.skillsRequired || []
+    return skills.some((s: any) =>
+      skillIds.includes(s.subskillId) || skillIds.includes(s.categoryId)
+    )
+  })
+}
+
 async function textSearch(
   db: any,
   searchQuery: string,
@@ -992,7 +1003,7 @@ async function textSearch(
   }
 
   if (types.includes("opportunity")) {
-    const projects = await db.collection("projects")
+    let projects = await db.collection("projects")
       .find(
         {
           $text: { $search: searchQuery },
@@ -1003,6 +1014,12 @@ async function textSearch(
       .sort({ score: { $meta: "textScore" } })
       .limit(limit)
       .toArray()
+
+    // enforce skill requirement if searchTerms match any known skills
+    const matchedSkillIds = findMatchingSkillIds(searchTerms)
+    if (matchedSkillIds.length > 0) {
+      projects = filterProjectsBySkills(projects, matchedSkillIds)
+    }
 
     for (const project of projects) {
       results.push(mapProjectToResult(project, searchTerms))
@@ -1015,7 +1032,7 @@ async function textSearch(
 /**
  * Build regex conditions for user search (all fields)
  */
-function buildUserRegexConditions(searchTerms: string[]): any[] {
+function buildUserRegexConditions(searchTerms: string[], prefixOnly = false): any[] {
   const conditions: any[] = []
 
   // Expand terms with synonyms/related concepts for broader matching
@@ -1026,7 +1043,7 @@ function buildUserRegexConditions(searchTerms: string[]): any[] {
   for (const term of searchTerms) {
     const escaped = escapeRegex(term)
     const prefixRegex = new RegExp(`^${escaped}`, "i")
-    const containsRegex = new RegExp(escaped, "i")
+    const containsRegex = prefixOnly ? prefixRegex : new RegExp(escaped, "i")
 
     // Core identity fields (prefix match for names)
     conditions.push({ name: prefixRegex })
@@ -1131,14 +1148,14 @@ function buildUserRegexConditions(searchTerms: string[]): any[] {
 /**
  * Build regex conditions for project search (all fields)
  */
-function buildProjectRegexConditions(searchTerms: string[]): any[] {
+function buildProjectRegexConditions(searchTerms: string[], prefixOnly = false): any[] {
   const conditions: any[] = []
   const expandedTerms = expandWithSynonyms(searchTerms)
 
   for (const term of searchTerms) {
     const escaped = escapeRegex(term)
     const prefixRegex = new RegExp(`^${escaped}`, "i")
-    const containsRegex = new RegExp(escaped, "i")
+    const containsRegex = prefixOnly ? prefixRegex : new RegExp(escaped, "i")
 
     conditions.push({ title: prefixRegex })
     conditions.push({ description: containsRegex })
@@ -1198,8 +1215,12 @@ async function prefixRegexSearch(
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = []
   const privacyFilter = buildPrivacyFilter()
-  const userConditions = buildUserRegexConditions(searchTerms)
-  const projectConditions = buildProjectRegexConditions(searchTerms)
+  // If the raw query is really short, prefer prefix-only regexes to avoid
+  // fuzzy/contains matches like "fim" → "financial". Adjust helpers
+  // accordingly by passing a flag.
+  const isShort = searchQuery.length <= 3
+  const userConditions = buildUserRegexConditions(searchTerms, isShort)
+  const projectConditions = buildProjectRegexConditions(searchTerms, isShort)
 
   if (types.includes("volunteer") || types.includes("ngo")) {
     const roleIn: string[] = []
@@ -1224,7 +1245,7 @@ async function prefixRegexSearch(
   }
 
   if (types.includes("opportunity")) {
-    const projects = await db.collection("projects")
+    let projects = await db.collection("projects")
       .find({
         status: { $in: ["open", "active"] },
         $or: projectConditions,
@@ -1232,6 +1253,12 @@ async function prefixRegexSearch(
       .project(PROJECT_PROJECTION)
       .limit(limit)
       .toArray()
+
+    // filter by skill IDs if the query looks like a skill search
+    const matchedSkillIds = findMatchingSkillIds(searchTerms)
+    if (matchedSkillIds.length > 0) {
+      projects = filterProjectsBySkills(projects, matchedSkillIds)
+    }
 
     for (const project of projects) {
       project.score = computeRelevanceScore(project, searchTerms)
@@ -1462,7 +1489,7 @@ async function fuzzyFallbackSearch(
   }
 
   if (types.includes("opportunity")) {
-    const projects = await db.collection("projects")
+    let projects = await db.collection("projects")
       .find({
         status: { $in: ["open", "active"] },
         $or: projectConditions,
@@ -1470,6 +1497,11 @@ async function fuzzyFallbackSearch(
       .project(PROJECT_PROJECTION)
       .limit(limit)
       .toArray()
+
+    const matchedSkillIds = findMatchingSkillIds(searchTerms)
+    if (matchedSkillIds.length > 0) {
+      projects = filterProjectsBySkills(projects, matchedSkillIds)
+    }
 
     for (const project of projects) {
       project.score = computeRelevanceScore(project, searchTerms) * 0.7
@@ -1496,6 +1528,11 @@ export async function unifiedSearch(params: UnifiedSearchParams): Promise<Search
   const db = client.db(DB_NAME)
 
   const searchTerms = trimmed.toLowerCase().split(/\s+/).filter(Boolean)
+  const matchedSkillIds = findMatchingSkillIds(searchTerms)
+  if (matchedSkillIds.length > 0) {
+    console.log(`[Mongo Search] skill query detected: ${matchedSkillIds.join(",")}`)
+  }
+
   // Expand with synonyms for the $text search query
   const expandedTerms = expandWithSynonyms(searchTerms)
   const expandedQuery = expandedTerms.slice(0, 30).join(" ") // Cap at 30 terms for $text
@@ -1740,7 +1777,7 @@ export async function getSearchSuggestions(params: SearchSuggestionsParams): Pro
     projectOrConditions.push({ causes: new RegExp(escapeRegex(causeId), "i") })
   }
 
-  const projects = await db.collection("projects")
+  let projects = await db.collection("projects")
     .find({
       status: { $in: ["open", "active"] },
       $or: projectOrConditions,
@@ -1748,6 +1785,11 @@ export async function getSearchSuggestions(params: SearchSuggestionsParams): Pro
     .project({ _id: 1, title: 1, location: 1, workMode: 1, timeCommitment: 1, duration: 1 })
     .limit(Math.max(2, limit - suggestions.length))
     .toArray()
+
+  // apply post-filter for skill-based queries
+  if (matchedSkillIds.length > 0) {
+    projects = filterProjectsBySkills(projects, matchedSkillIds)
+  }
 
   for (const project of projects) {
     let subtitle = project.workMode === "remote" ? "Remote" : project.location
