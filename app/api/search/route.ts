@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const result = await searchWithAgent(query)
-      return NextResponse.json({ success: true, data: result, method: "ai-agent" })
+      return NextResponse.json({ success: true, data: result, method: "ai-agent", timestamp: new Date().toISOString() })
     } catch (aiError) {
       console.error("[AI Search] AI agent failed, using keyword fallback:", aiError)
       const result = await keywordFallbackWithDB(query)
@@ -110,7 +110,7 @@ async function searchWithAgent(query: string) {
 
   // Step 1: Use AI to parse the natural language query into structured filters
   const { output: parsedFilters } = await generateText({
-    model: openai("gpt-5.2"),
+    model: openai("gpt-4o-mini"),
     temperature: 0,
     system: `You are a search query parser. Your ONLY job is to extract structured filters from the user's EXACT query text.
 
@@ -331,7 +331,9 @@ async function keywordFallbackWithDB(query: string) {
     "budget": ["budgeting-forecasting"],
     "payroll": ["payroll-processing"],
     "photo": ["photography", "photo-editing"],
+    "photography": ["photography"],
     "video": ["videography", "video-editing", "motion-graphics", "social-media-content"],
+    "videography": ["videography"],
     "editing": ["video-editing", "photo-editing"],
     "graphic": ["graphic-design", "motion-graphics", "illustration", "branding-identity"],
     "content creator": ["photography", "videography", "video-editing", "photo-editing", "motion-graphics", "graphic-design", "social-media-content", "podcast-production", "illustration", "branding-identity", "ai-content-tools", "presentation-design"],
@@ -401,9 +403,18 @@ async function keywordFallbackWithDB(query: string) {
     "accessib": ["disability-support"],
   }
 
+  // First, try direct keyword matching
   for (const [keyword, matchedSkills] of Object.entries(skillKeywords)) {
     if (q.includes(keyword)) {
       skills.push(...matchedSkills)
+    }
+  }
+
+  // Fallback: if no skills matched and query looks like a skill ID, try exact match
+  if (skills.length === 0 && q.length > 0) {
+    const normalizedQuery = q.replace(/\s+/g, "-") // Convert spaces to hyphens
+    if ((VALID_SKILLS as readonly string[]).includes(normalizedQuery)) {
+      skills.push(normalizedQuery)
     }
   }
 
@@ -434,7 +445,7 @@ async function keywordFallbackWithDB(query: string) {
 
   // Search DB with keyword-extracted filters
   const db = client.db("justbecause")
-  const matchedVolunteerIds = await searchVolunteersInDB(db, {
+  let matchedVolunteerIds = await searchVolunteersInDB(db, {
     skills: uniqueSkills,
     location,
     volunteerType,
@@ -443,6 +454,20 @@ async function keywordFallbackWithDB(query: string) {
     minRating: null,
     maxHoursPerWeek: null,
   })
+
+  // Tier 2: If no results but we have location, try without location filter
+  if (matchedVolunteerIds.length === 0 && location && uniqueSkills.length > 0) {
+    matchedVolunteerIds = await searchVolunteersInDB(db, {
+      skills: uniqueSkills,
+      location: null, // Remove location constraint
+      volunteerType,
+      workMode,
+      maxHourlyRate: null,
+      minRating: null,
+      maxHoursPerWeek: null,
+    })
+    console.log(`[AI Search] Keyword fallback retry (no location): "${query}" → skills: [${uniqueSkills}], matched: ${matchedVolunteerIds.length}`)
+  }
 
   console.log(`[AI Search] Keyword fallback for "${query}" → skills: [${uniqueSkills}], location: ${location}, matched: ${matchedVolunteerIds.length}`)
 
@@ -457,5 +482,7 @@ async function keywordFallbackWithDB(query: string) {
     maxHoursPerWeek: null,
     matchedVolunteerIds,
     searchIntent: query,
+    method: "keyword-fallback",
+    timestamp: new Date().toISOString(),
   }
 }

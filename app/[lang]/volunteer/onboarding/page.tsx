@@ -538,7 +538,7 @@ export default function VolunteerOnboardingPage() {
           )}
 
           {phoneVerificationStep === "otp" && (
-            <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
+            <div className="p-4 rounded-lg border bg-muted/50 space-y-4 w-full max-w-full overflow-visible">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{dict.volunteer?.onboarding?.enterVerificationCode || "Enter verification code"}</p>
@@ -565,7 +565,7 @@ export default function VolunteerOnboardingPage() {
                 </div>
               )}
               
-              <div className="flex justify-center gap-2" onPaste={handlePhoneOtpPaste}>
+              <div className="flex flex-wrap justify-center gap-2" onPaste={handlePhoneOtpPaste}>
                 {phoneOtp.map((digit, index) => (
                   <Input
                     key={index}
@@ -576,7 +576,7 @@ export default function VolunteerOnboardingPage() {
                     value={digit}
                     onChange={(e) => handlePhoneOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handlePhoneOtpKeyDown(index, e)}
-                    className="w-10 h-12 text-center text-xl font-bold"
+                    className="w-10 h-12 text-center text-xl font-bold flex-shrink-0"
                     autoFocus={index === 0}
                   />
                 ))}

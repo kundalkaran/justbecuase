@@ -126,7 +126,8 @@ export function OpportunitiesBrowser() {
         )
         const data = await res.json()
         if (data.success && !controller.signal.aborted) {
-          const ids = (data.results || []).map((r: any) => r.id)
+          // use mongoId when available since ES document IDs may differ
+        const ids = (data.results || []).map((r: any) => r.mongoId || r.id)
           setUnifiedMatchedIds(ids)
           const orderMap = new Map<string, number>()
           ids.forEach((id: string, idx: number) => orderMap.set(id, ids.length - idx))
