@@ -1390,6 +1390,41 @@ export function buildSearchQuery(query: string, filters?: ESSearchParams["filter
     searchText = query.trim()
   }
 
+  // ---- Pure-intent detection ----
+  // When the entire query is a single intent word (e.g. "onsite", "remote",
+  // "hybrid"), cleanQueryForTextSearch strips it and we fall back to the raw
+  // query. But these words DO NOT appear in ES text fields (title, skillNames,
+  // etc.) — they live in the `workMode` keyword field. If we send them as a
+  // text-match MUST clause ES finds nothing, then falls back to whatever
+  // min-score results exist (often the wrong workMode). 
+  //
+  // Fix: detect pure work-mode queries and convert to a hard filter so only
+  // results with the matching workMode are returned, with no text-match gate.
+  const WORK_MODE_MAP: Record<string, string> = {
+    onsite: "onsite",
+    "on-site": "onsite",
+    "on site": "onsite",
+    "in-person": "onsite",
+    "in person": "onsite",
+    office: "onsite",
+    remote: "remote",
+    "work from home": "remote",
+    wfh: "remote",
+    online: "remote",
+    virtual: "remote",
+    hybrid: "hybrid",
+  }
+  const rawQ = query.trim().toLowerCase()
+  const pureWorkMode = WORK_MODE_MAP[rawQ]
+  if (pureWorkMode) {
+    // Hard-filter by workMode — skip text matching entirely
+    filterClauses.push({ term: { workMode: pureWorkMode } })
+    console.log(`[ES Search] Pure work-mode query "${rawQ}" → filter workMode=${pureWorkMode}`)
+    // Return a match_all with the filter applied via the caller's filter chain
+    must.push({ match_all: {} })
+    // Still apply type/status filters below by NOT returning early here
+  } else {
+
   // Determine if this query matches any known skill names or IDs. We'll also
   // collect the matching skill IDs, which we can use to *require* a result to
   // actually contain that skill. This avoids generic hits like projects that
@@ -1608,6 +1643,8 @@ export function buildSearchQuery(query: string, filters?: ESSearchParams["filter
       boost: 1.2,
     },
   })
+
+  } // end else (non-pure-work-mode branch)
 
   // Apply filters
   if (filters) {

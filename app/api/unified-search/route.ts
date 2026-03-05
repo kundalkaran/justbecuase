@@ -171,8 +171,11 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      // When ES returns no results, fall back to MongoDB so the user always gets something
-      if (mappedResults.length === 0 && mode !== "suggestions") {
+      // When ES returns no results, fall back to MongoDB so the user always gets something.
+      // Skip fallback for pure work-mode queries (remote/onsite/hybrid) — MongoDB has no
+      // workMode filter, so it would return incorrect results instead of "no results found".
+      const isPureWorkModeQuery = /^(remote|onsite|on-site|on site|in-person|in person|office|wfh|work from home|virtual|online|hybrid)$/i.test(query.trim())
+      if (mappedResults.length === 0 && mode !== "suggestions" && !isPureWorkModeQuery) {
         console.log(`[Search API] ES returned 0 results for query="${query}" — falling back to MongoDB`)
         const mongoFallbackTypes = rawTypes as ("volunteer" | "ngo" | "opportunity")[] | undefined
         try {
