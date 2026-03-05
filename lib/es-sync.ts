@@ -199,7 +199,7 @@ function transformVolunteer(doc: any): Record<string, any> | null {
 
   return {
     mongoId: doc._id.toString(),
-    userId: doc.userId,
+    userId: doc._id.toString(),  // user collection: _id IS the user/volunteer ID
     name: doc.name || "",
     avatar: doc.avatar || doc.image || "",
     headline: doc.headline || "",

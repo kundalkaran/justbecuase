@@ -381,12 +381,17 @@ export function FindTalentClient({ volunteers, subscriptionPlan }: FindTalentCli
       return
     }
 
+    // Immediately invalidate stale IDs from the previous query so the filter
+    // falls back to client-side text matching during the debounce window
+    // instead of using IDs from a completely different search.
+    unifiedAbortRef.current?.abort()
+    setUnifiedMatchedIds(null)
+    setIsUnifiedSearching(true)
+
     const timer = setTimeout(async () => {
-      unifiedAbortRef.current?.abort()
       const controller = new AbortController()
       unifiedAbortRef.current = controller
 
-      setIsUnifiedSearching(true)
       try {
         const res = await fetch(
           `/api/unified-search?q=${encodeURIComponent(trimmed)}&types=volunteer&limit=50`,

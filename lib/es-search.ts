@@ -730,7 +730,7 @@ const ROLE_TO_SKILLS: Record<string, string[]> = {
   "coder": ["React / Next.js", "Node.js", "Python", "HTML / CSS"],
   "coding": ["React / Next.js", "Node.js", "Python", "HTML / CSS"],
   "website designer": ["WordPress Development", "UX / UI Design", "Website Redesign", "HTML / CSS"],
-  "web designer": ["WordPress Development", "UX / UI Design", "Website Redesign", "HTML / CSS", "Graphic Design"],
+  "web designer": ["WordPress Development", "UX / UI Design", "Website Redesign", "HTML / CSS", "Landing Page Optimization"],
   "web design": ["WordPress Development", "UX / UI Design", "Website Redesign", "HTML / CSS"],
   "website builder": ["WordPress Development", "Website Redesign", "HTML / CSS", "Webflow"],
 
