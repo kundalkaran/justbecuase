@@ -888,6 +888,15 @@ export async function createProject(data: {
     revalidatePath("/ngo/projects")
     revalidatePath("/projects")
     trackEvent("project", "created", { userId: user.id, metadata: { projectId, title: data.title, skillCount: data.skillsRequired?.length || 0 } })
+
+    // Real-time ES sync — fire-and-forget so it never blocks project creation
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("projects", projectId)
+    } catch (syncErr) {
+      console.error("[createProject] ES sync failed (non-blocking):", syncErr)
+    }
+
     return { success: true, data: projectId }
   } catch (error) {
     console.error("Error creating project:", error)
@@ -1021,6 +1030,15 @@ export async function updateProject(
 
     revalidatePath(`/projects/${id}`)
     revalidatePath("/ngo/projects")
+
+    // Real-time ES sync — fire-and-forget so it never blocks the update
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("projects", id)
+    } catch (syncErr) {
+      console.error("[updateProject] ES sync failed (non-blocking):", syncErr)
+    }
+
     return { success: true, data: result }
   } catch (error) {
     return { success: false, error: "Failed to update project" }

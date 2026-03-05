@@ -171,6 +171,25 @@ export async function GET(request: NextRequest) {
         }
       })
 
+      // When ES returns no results, fall back to MongoDB so the user always gets something
+      if (mappedResults.length === 0 && mode !== "suggestions") {
+        console.log(`[Search API] ES returned 0 results for query="${query}" — falling back to MongoDB`)
+        const mongoFallbackTypes = rawTypes as ("volunteer" | "ngo" | "opportunity")[] | undefined
+        try {
+          const mongoResults = await unifiedSearch({ query, types: mongoFallbackTypes, limit: Math.min(limit, 50) })
+          console.log(`[Search API] MongoDB fallback returned ${mongoResults.length} results`)
+          return NextResponse.json({
+            success: true,
+            results: mongoResults,
+            query,
+            count: mongoResults.length,
+            engine: "mongodb-fallback",
+          })
+        } catch (mongoErr) {
+          console.error("[Search API] MongoDB fallback also failed:", mongoErr)
+        }
+      }
+
       return NextResponse.json({
         success: true,
         results: mappedResults,
