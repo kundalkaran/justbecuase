@@ -15,6 +15,7 @@ export function VolunteersHero() {
           <div className="max-w-xl mx-auto">
             <UnifiedSearchBar
               defaultType="volunteer"
+              allowedTypes={["volunteer"]}
               variant="hero"
               placeholder="Search by skills, location, or name..."
               showPopularTags

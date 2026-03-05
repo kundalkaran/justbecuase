@@ -71,7 +71,8 @@ export default function VolunteersPage() {
         )
         const data = await res.json()
         if (data.success && !controller.signal.aborted) {
-          const ids = (data.results || []).map((r: any) => r.id)
+          // Use mongoId for reliable cross-referencing with volunteer list
+          const ids = (data.results || []).map((r: any) => r.mongoId || r.id)
           setUnifiedMatchedIds(ids)
           const orderMap = new Map<string, number>()
           ids.forEach((id: string, idx: number) => orderMap.set(id, ids.length - idx))
@@ -384,6 +385,7 @@ export default function VolunteersPage() {
             <div className="flex-1">
               <UnifiedSearchBar
                 defaultType="volunteer"
+                allowedTypes={["volunteer"]}
                 variant="default"
                 placeholder={dict.volunteersListing?.searchPlaceholder || "Search by skills, location, or name..."}
                 value={searchQuery}

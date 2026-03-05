@@ -749,6 +749,7 @@ export function FindTalentClient({ volunteers, subscriptionPlan }: FindTalentCli
             <div className="flex-1">
               <UnifiedSearchBar
                 defaultType="volunteer"
+                allowedTypes={["volunteer"]}
                 variant="default"
                 placeholder='Try: "SEO expert for education" or "remote designer near Mumbai"'
                 value={searchQuery}

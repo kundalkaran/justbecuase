@@ -410,6 +410,7 @@ function ProjectsContent() {
             <div className="flex-1">
               <UnifiedSearchBar
                 defaultType="opportunity"
+                allowedTypes={["opportunity"]}
                 variant="default"
                 placeholder={dict.projectsListing?.searchPlaceholder || "Search opportunities, skills, or organizations..."}
                 value={searchQuery}

@@ -19,6 +19,8 @@ import { useNotificationStore } from "@/lib/store"
 import { StreamMessageBadge } from "@/components/stream/stream-message-badge"
 import { signOut } from "@/lib/auth-client"
 import { useDictionary } from "@/components/dictionary-provider"
+import { useRouter } from "next/navigation"
+import { useLocale, localePath } from "@/hooks/use-locale"
 
 interface DashboardContentHeaderProps {
   userType: "volunteer" | "ngo"
@@ -30,6 +32,8 @@ export function DashboardContentHeader({ userType, userName, userAvatar }: Dashb
   const unreadCount = useNotificationStore((state) => state.unreadCount)
   const dict = useDictionary()
   const d = dict.dashboard || {} as any
+  const router = useRouter()
+  const locale = useLocale()
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
@@ -53,6 +57,12 @@ export function DashboardContentHeader({ userType, userName, userAvatar }: Dashb
             ? ["opportunity", "ngo"]
             : ["volunteer", "opportunity"]}
           className="w-full"
+          onSubmit={(query) => {
+            const target = userType === "volunteer"
+              ? `/projects?q=${encodeURIComponent(query)}`
+              : `/ngo/find-talent?q=${encodeURIComponent(query)}`
+            router.push(localePath(target, locale))
+          }}
         />
       </div>
 
