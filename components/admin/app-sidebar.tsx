@@ -18,6 +18,7 @@ import {
   Ban,
   Bell,
   Tag,
+  Database,
 } from "lucide-react"
 import {
   Sidebar,
@@ -73,6 +74,7 @@ const navGroups = [
       { title: "Team", href: "/admin/team", icon: UsersRound },
       { title: "Ban History", href: "/admin/bans", icon: Ban },
       { title: "Admin Accounts", href: "/admin/admins", icon: Shield },
+      { title: "Search Index", href: "/admin/search", icon: Database },
       { title: "Settings", href: "/admin/settings", icon: Settings },
     ],
   },

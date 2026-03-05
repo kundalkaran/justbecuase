@@ -37,9 +37,6 @@ import {
   EyeOff,
   TestTube,
   Zap,
-  Database,
-  RefreshCw,
-  Activity,
 } from "lucide-react"
 import { getAdminSettings, updateAdminSettings } from "@/lib/actions"
 import { toast } from "sonner"
@@ -395,10 +392,6 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             {dict.admin?.settings?.tabs?.security || "Security"}
-          </TabsTrigger>
-          <TabsTrigger value="search-index" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Search Index
           </TabsTrigger>
         </TabsList>
 
@@ -1659,156 +1652,7 @@ export default function AdminSettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Search Index (Elasticsearch) */}
-        <TabsContent value="search-index" className="space-y-6">
-          <SearchIndexPanel />
-        </TabsContent>
       </Tabs>
-    </div>
-  )
-}
-
-// ---- Search Index Panel (Elasticsearch Sync) ----
-function SearchIndexPanel() {
-  const [stats, setStats] = useState<Record<string, { docs: number; size: string }> | null>(null)
-  const [statsStatus, setStatsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle")
-  const [syncState, setSyncState] = useState<Record<string, "idle" | "running" | "done" | "error">>({
-    all: "idle", projects: "idle", volunteers: "idle", ngos: "idle",
-  })
-  const [syncResults, setSyncResults] = useState<Record<string, any>>({})
-
-  const fetchStats = async () => {
-    setStatsStatus("loading")
-    try {
-      const res = await fetch("/api/admin/es-sync")
-      const data = await res.json()
-      setStats(data.indices || {})
-      setStatsStatus(data.status === "ok" ? "ok" : "error")
-    } catch {
-      setStatsStatus("error")
-    }
-  }
-
-  useEffect(() => { fetchStats() }, [])
-
-  const runSync = async (key: string, collections?: string[]) => {
-    setSyncState(s => ({ ...s, [key]: "running" }))
-    setSyncResults(r => ({ ...r, [key]: null }))
-    try {
-      const res = await fetch("/api/admin/es-sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "full", collections }),
-      })
-      const data = await res.json()
-      setSyncResults(r => ({ ...r, [key]: data }))
-      setSyncState(s => ({ ...s, [key]: data.success ? "done" : "error" }))
-      if (data.success) fetchStats()
-    } catch (e: any) {
-      setSyncResults(r => ({ ...r, [key]: { error: e.message } }))
-      setSyncState(s => ({ ...s, [key]: "error" }))
-    }
-  }
-
-  const syncButtons: { key: string; label: string; collections?: string[] }[] = [
-    { key: "all", label: "Sync Everything" },
-    { key: "projects", label: "Projects Only", collections: ["projects"] },
-    { key: "volunteers", label: "Volunteers Only", collections: ["volunteers"] },
-    { key: "ngos", label: "NGOs Only", collections: ["ngos"] },
-  ]
-
-  return (
-    <div className="space-y-6">
-      {/* Index Stats */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" /> Elasticsearch Index Stats
-              </CardTitle>
-              <CardDescription>Live document counts and index sizes</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={fetchStats} disabled={statsStatus === "loading"}>
-              {statsStatus === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              <span className="ml-2">Refresh</span>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {statsStatus === "error" && (
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertCircle className="h-4 w-4" /> Elasticsearch is unreachable or not configured
-            </div>
-          )}
-          {statsStatus === "ok" && stats && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {Object.entries(stats).map(([name, info]) => (
-                <div key={name} className="rounded-lg border p-4">
-                  <p className="text-xs text-muted-foreground truncate">{name.replace("justbecause_", "").replace("_", " ")}</p>
-                  <p className="text-2xl font-bold mt-1">{info.docs.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">{info.size}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {statsStatus === "loading" && (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading stats...
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Sync Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" /> Sync MongoDB → Elasticsearch
-          </CardTitle>
-          <CardDescription>
-            Re-indexes data so search results are up-to-date. New projects/volunteers sync automatically;
-            use this to backfill existing data or after bulk imports.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {syncButtons.map(({ key, label, collections }) => (
-            <div key={key} className="flex items-center justify-between rounded-lg border p-4">
-              <div>
-                <p className="font-medium text-sm">{label}</p>
-                {syncResults[key] && (
-                  <div className="mt-1 text-xs">
-                    {syncResults[key].success ? (
-                      <span className="text-emerald-600">
-                        ✓ Synced: {Object.entries(syncResults[key].synced || {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "0 total"}
-                        {syncResults[key].errors?.length > 0 && (
-                          <span className="text-amber-600 ml-2">({syncResults[key].errors.length} errors)</span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-destructive">✗ {syncResults[key].error || "Failed"}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <Button
-                variant={syncState[key] === "done" ? "outline" : "default"}
-                size="sm"
-                onClick={() => runSync(key, collections)}
-                disabled={syncState[key] === "running"}
-              >
-                {syncState[key] === "running" ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Syncing...</>
-                ) : syncState[key] === "done" ? (
-                  <><Check className="h-4 w-4 mr-2" />Done — Re-sync</>
-                ) : (
-                  <><Zap className="h-4 w-4 mr-2" />Run Sync</>
-                )}
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   )
 }

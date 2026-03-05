@@ -444,6 +444,13 @@ export async function updateVolunteerProfile(
     
     const result = await volunteerProfilesDb.update(user.id, filteredUpdates)
     revalidatePath("/volunteer/profile")
+    // Real-time ES sync — never block the profile save
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("volunteer", user.id)
+    } catch (syncErr) {
+      console.error("[updateVolunteerProfile] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true, data: result }
   } catch (error: any) {
     // Re-throw Next.js internal errors (redirect, notFound, etc.)
@@ -538,6 +545,13 @@ export async function saveNGOOnboarding(data: {
     revalidatePath("/ngo/dashboard")
     trackEvent("user", "ngo_signup", { userId: user.id, metadata: { orgName: data.orgDetails.orgName } })
     trackEvent("user", "profile_complete", { userId: user.id, metadata: { role: "ngo" } })
+    // Real-time ES sync — never block onboarding
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("ngo", user.id)
+    } catch (syncErr) {
+      console.error("[saveNGOOnboarding] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true, data: "NGO profile saved successfully" }
   } catch (error) {
     console.error("Error saving NGO onboarding:", error)
@@ -592,6 +606,13 @@ export async function updateNGOProfile(
     console.log(`[NGO Save] DB update result: modified=${result}`)
     revalidatePath("/ngo/profile")
     revalidatePath("/ngo/settings")
+    // Real-time ES sync — never block the profile save
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("ngo", user.id)
+    } catch (syncErr) {
+      console.error("[updateNGOProfile] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true, data: result }
   } catch (error: any) {
     // Re-throw Next.js internal errors (redirect, notFound, etc.)
@@ -1057,6 +1078,13 @@ export async function deleteProject(id: string): Promise<ApiResponse<boolean>> {
     const result = await projectsDb.delete(id)
     revalidatePath("/ngo/projects")
     revalidatePath("/projects")
+    // Remove from ES
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("projects", id, "delete")
+    } catch (syncErr) {
+      console.error("[deleteProject] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true, data: result }
   } catch (error) {
     return { success: false, error: "Failed to delete project" }
@@ -3954,7 +3982,15 @@ export async function createBlogPost(data: {
       createdAt: new Date(),
       updatedAt: new Date(),
     })
-
+    // Real-time ES sync for published posts
+    if (data.status === "published") {
+      try {
+        const { syncSingleDocument } = await import("@/lib/es-sync")
+        await syncSingleDocument("blogPosts", postId)
+      } catch (syncErr) {
+        console.error("[createBlogPost] ES sync failed (non-blocking):", syncErr)
+      }
+    }
     return { success: true, data: { postId } }
   } catch (error) {
     console.error("Failed to create blog post:", error)
@@ -3973,6 +4009,13 @@ export async function updateBlogPost(id: string, data: Partial<BlogPost>): Promi
     }
 
     await blogPostsDb.update(id, data)
+    // Sync to ES — if published, index it; if draft, this removes it (transformBlogPost returns null for non-published)
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("blogPosts", id)
+    } catch (syncErr) {
+      console.error("[updateBlogPost] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true }
   } catch (error) {
     console.error("Failed to update blog post:", error)
@@ -3987,6 +4030,13 @@ export async function deleteBlogPost(id: string): Promise<ApiResponse<void>> {
     if ((session.user as any).role !== "admin") return { success: false, error: "Admin only" }
 
     await blogPostsDb.delete(id)
+    // Remove from ES
+    try {
+      const { syncSingleDocument } = await import("@/lib/es-sync")
+      await syncSingleDocument("blogPosts", id, "delete")
+    } catch (syncErr) {
+      console.error("[deleteBlogPost] ES sync failed (non-blocking):", syncErr)
+    }
     return { success: true }
   } catch (error) {
     console.error("Failed to delete blog post:", error)
