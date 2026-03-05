@@ -481,7 +481,7 @@ async function getCompletionSuggestions(
         },
       },
     },
-    _source: ["mongoId", "name", "orgName", "title", "slug", "skillNames", "causeNames", "city", "country", "headline", "subtitle", "description", "excerpt"],
+    _source: ["mongoId", "userId", "name", "orgName", "title", "slug", "skillNames", "causeNames", "city", "country", "headline", "subtitle", "description", "excerpt"],
   })
 
   const suggestions: ESSuggestion[] = []
@@ -601,7 +601,7 @@ async function getPrefixSearchSuggestions(
       },
     },
     size: limit,
-    _source: ["mongoId", "name", "orgName", "title", "slug", "skillNames", "causeNames", "city", "country", "headline", "subtitle", "description", "excerpt", "bio", "mission"],
+    _source: ["mongoId", "userId", "name", "orgName", "title", "slug", "skillNames", "causeNames", "city", "country", "headline", "subtitle", "description", "excerpt", "bio", "mission"],
   })
 
   const suggestions: ESSuggestion[] = []
@@ -1835,8 +1835,9 @@ function transformHitToResult(
         title: source.name || "Unknown Volunteer",
         subtitle: source.headline || (source.skillNames && source.skillNames.length > 0 ? `Skills: ${Array.isArray(source.skillNames) ? source.skillNames.slice(0, 3).join(", ") : String(source.skillNames).substring(0, 80)}` : ""),
         description: source.bio || "",
-        url: `/volunteers/${source.mongoId || esId}`,
+        url: `/volunteers/${source.userId || source.mongoId || esId}`,
         metadata: {
+          userId: source.userId,
           avatar: source.avatar,
           city: source.city,
           country: source.country,

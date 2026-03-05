@@ -394,8 +394,10 @@ export function FindTalentClient({ volunteers, subscriptionPlan }: FindTalentCli
         )
         const data = await res.json()
         if (data.success && !controller.signal.aborted) {
-          // Use mongoId for reliable cross-referencing with volunteer list
-          const ids = (data.results || []).map((r: any) => r.mongoId || r.id)
+          // Use userId (Better Auth user ID) for cross-referencing with the
+          // pre-loaded volunteer list whose IDs are userId, not MongoDB _id.
+          // Fall back to mongoId/id for non-volunteer result types.
+          const ids = (data.results || []).map((r: any) => r.userId || r.mongoId || r.id)
           setUnifiedMatchedIds(ids)
           // Store relevance order from API (index 0 = most relevant)
           const orderMap = new Map<string, number>()

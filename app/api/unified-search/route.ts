@@ -147,6 +147,7 @@ export async function GET(request: NextRequest) {
         return {
           id: r.id,
           mongoId: r.mongoId,
+          userId: m.userId || undefined,
           type: mapResultType(r.type),
           title: r.title,
           subtitle: r.subtitle,
