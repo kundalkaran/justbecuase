@@ -217,7 +217,7 @@ function transformVolunteer(doc: any): Record<string, any> | null {
     workMode: doc.workMode || "remote",
     experienceLevel: computedExperienceLevel,
     availability: doc.availability || "flexible",
-    hoursPerWeek: doc.hoursPerWeek || "",
+    hoursPerWeek: doc.hoursPerWeek ? Number(doc.hoursPerWeek) : undefined,
     hourlyRate: doc.hourlyRate || 0,
     currency: doc.currency || "INR",
     rating: doc.rating || 0,

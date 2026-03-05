@@ -939,6 +939,12 @@ function cleanQueryForTextSearch(query: string): string {
     cleaned = cleaned.replace(regex, " ")
   }
 
+  // Remove "N hours per week/month/day" patterns (availability signals, handled by detectQueryIntent)
+  cleaned = cleaned.replace(/\b\d+\s*(?:hours?|hrs?)\s+(?:(?:per|a|each|\/)\s*)?(?:week|month|day)\b/gi, " ")
+  // Remove leftover availability filler words once numbers have been stripped
+  cleaned = cleaned.replace(/\b(?:(?:per|a|each)\s+)?(?:hours?|hrs?)\s*(?:per\s+)?(?:week|month|day)?\b/gi, " ")
+  cleaned = cleaned.replace(/\bper\s+(?:week|month|day)\b/gi, " ")
+
   // Remove lone numbers that aren't part of a word (e.g. leftover "2" from "2 year")
   cleaned = cleaned.replace(/\b\d+\b/g, " ")
 
@@ -1193,8 +1199,16 @@ function detectQueryIntent(query: string): QueryIntent {
   // --- PRICING INTENT ---
   // "free", "pro bono", "no cost", "budget", "voluntary"
   if (/\b(free|pro[- ]?bono|no[- ]?cost|voluntary|gratis|without[- ]?pay)\b/.test(q)) {
-    boosts.push({ term: { volunteerType: { value: "free", boost: 5.0 } } })
-    boosts.push({ term: { volunteerType: { value: "both", boost: 2.0 } } })
+    // Hard filter: only return free or "both" type volunteers (user explicitly wants no-cost)
+    filters.push({
+      bool: {
+        should: [
+          { term: { volunteerType: "free" } },
+          { term: { volunteerType: "both" } },
+        ],
+        minimum_should_match: 1,
+      },
+    })
     signals.push("price:free")
   }
   // "cheap", "affordable", "budget", "low cost", "inexpensive"
@@ -1269,6 +1283,19 @@ function detectQueryIntent(query: string): QueryIntent {
   if (/\b(hybrid|flexible location)\b/.test(q)) {
     boosts.push({ term: { workMode: { value: "hybrid", boost: 3.0 } } })
     signals.push("mode:hybrid")
+  }
+
+  // --- HOURS PER WEEK / COMMITMENT INTENT ---
+  // "2 hours per week", "5 hrs/week", "10 hours a month", "3 hours"
+  const hoursMatch = q.match(/\b(\d+)\s*(?:hours?|hrs?)\s*(?:(?:per|a|each|\/)?\s*(?:week|month|day))?\b/)
+  if (hoursMatch) {
+    const hrs = parseInt(hoursMatch[1])
+    if (hrs > 0 && hrs <= 80) {
+      // Boost volunteers who can commit at least this many hours per week
+      // Note: range query works after hoursPerWeek mapping is updated to integer
+      boosts.push({ range: { hoursPerWeek: { gte: hrs, boost: 3.0 } } })
+      signals.push(`avail:${hrs}hrs`)
+    }
   }
 
   // --- AVAILABILITY INTENT ---

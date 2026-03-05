@@ -137,7 +137,7 @@ export async function ensureElasticsearchIndexes(): Promise<void> {
         workMode: keywordField(),
         experienceLevel: keywordField(),
         availability: keywordField(),
-        hoursPerWeek: { type: "keyword" as const },
+        hoursPerWeek: { type: "integer" as const },
         hourlyRate: { type: "float" as const },
         currency: keywordField(),
         rating: { type: "float" as const },
