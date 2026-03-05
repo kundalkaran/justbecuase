@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "git": "git add . ; git commit -m 'new-commit' ; git push ; vercel --prod",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

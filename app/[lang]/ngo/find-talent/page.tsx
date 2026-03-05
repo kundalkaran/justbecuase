@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth"
 import { getDictionary } from "@/app/[lang]/dictionaries"
 import type { Locale } from "@/lib/i18n-config"
 import { getNGOProfile, browseVolunteers, getNGOSubscriptionStatus } from "@/lib/actions"
-import { FindTalentClient } from "@/components/volunteers/find-talent-client"
 
 export default async function NGOFindTalentPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
@@ -70,10 +69,7 @@ export default async function NGOFindTalentPage({ params }: { params: Promise<{ 
             </p>
           </div>
 
-          <FindTalentClient 
-            volunteers={serializedVolunteers}
-            subscriptionPlan={ngoSubscription?.plan || "free"}
-          />
+         
     </main>
   )
 }
