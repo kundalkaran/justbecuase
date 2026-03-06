@@ -92,6 +92,46 @@ interface PersonalizedOpportunity {
 }
 
 // ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Normalize work mode string for comparison: remove hyphens & spaces
+ * e.g., "on-site" → "onsite", "work from home" → "workfromhome"
+ */
+function normalizeWorkMode(mode: string | undefined): string {
+  if (!mode) return ""
+  return mode.toLowerCase().replace(/[\s\-]/g, "")
+}
+
+/**
+ * Extract work mode from search query
+ * Returns: 'remote' | 'onsite' | 'hybrid' | null
+ */
+function extractWorkModeFromQuery(query: string): string | null {
+  if (!query) return null
+  
+  const q = query.toLowerCase().trim()
+  
+  // Remote patterns
+  if (/\b(remote|virtual|online|wfh|work.?from.?home)\b/.test(q)) {
+    return "remote"
+  }
+  
+  // Onsite/office patterns
+  if (/\b(onsite|on.?site|in.?person|office|in.?office)\b/.test(q)) {
+    return "onsite"
+  }
+  
+  // Hybrid patterns
+  if (/\b(hybrid|mixed)\b/.test(q)) {
+    return "hybrid"
+  }
+  
+  return null
+}
+
+// ============================================
 // CONSTANTS
 // ============================================
 
@@ -229,6 +269,7 @@ export function OpportunitiesBrowser() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [selectedTimeCommitment, setSelectedTimeCommitment] = useState<string[]>([])
   const [selectedWorkMode, setSelectedWorkMode] = useState("")
+  const [autoWorkMode, setAutoWorkMode] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("best-match")
 
   // ---- UNIFIED SEARCH ----
@@ -280,6 +321,26 @@ export function OpportunitiesBrowser() {
     }, 300)
 
     return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // ---- EXTRACT AND APPLY WORK MODE FROM SEARCH QUERY ----
+  // derive a filter from the free‑text query; when the query contains a
+  // recognised mode we automatically select it and remember that the
+  // value was auto‑derived so the user can override it manually later.
+  useEffect(() => {
+    const extracted = extractWorkModeFromQuery(searchQuery)
+
+    if (extracted) {
+      // only update state when the auto-derived value actually changes
+      if (autoWorkMode !== extracted) {
+        setSelectedWorkMode(extracted)
+        setAutoWorkMode(extracted)
+      }
+    } else if (autoWorkMode !== null) {
+      // the text no longer mentions a mode we previously injected
+      setSelectedWorkMode("")
+      setAutoWorkMode(null)
+    }
   }, [searchQuery])
 
   useEffect(() => {
@@ -339,15 +400,29 @@ export function OpportunitiesBrowser() {
     )
   }
 
+  const handleWorkModeChange = (mode: string) => {
+    setSelectedWorkMode(mode)
+    // a manual override clears any previous auto-derived mode so the
+    // query no longer circulates updates back to the UI
+    setAutoWorkMode(null)
+  }
+
   const clearFilters = () => {
     setSelectedSkills([])
     setSelectedTimeCommitment([])
     setSelectedWorkMode("")
+    setAutoWorkMode(null)
     setSearchQuery("")
   }
 
+  // derive a work-mode filter that takes the query into account so the
+  // UI and filtering behave instantaneously instead of waiting for the
+  // effect to run.
+  const effectiveWorkMode =
+    selectedWorkMode || extractWorkModeFromQuery(searchQuery) || ""
+
   const hasActiveFilters =
-    selectedSkills.length > 0 || selectedTimeCommitment.length > 0 || selectedWorkMode !== ""
+    selectedSkills.length > 0 || selectedTimeCommitment.length > 0 || effectiveWorkMode !== ""
 
   // ---- UNIFIED DATA SHAPE ----
   const allItems = useMemo(() => {
@@ -383,23 +458,29 @@ export function OpportunitiesBrowser() {
     // Text search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
+      const cleanedQuery = query.replace(/\b(remote|onsite|hybrid|virtual|online|wfh|work.?from.?home)\b/gi, '').trim()
+
       const clientFilter = (item: typeof result[number]) => {
         const p = item.project
+        const searchIn = cleanedQuery
         return (
-          p.title?.toLowerCase().includes(query) ||
-          p.description?.toLowerCase().includes(query) ||
+          p.title?.toLowerCase().includes(searchIn) ||
+          p.description?.toLowerCase().includes(searchIn) ||
           p.skillsRequired?.some(
             (s) =>
-              s.categoryId?.toLowerCase().includes(query) ||
-              s.subskillId?.toLowerCase().includes(query) ||
-              resolveSkillName(s.subskillId)?.toLowerCase().includes(query) ||
-              resolveSkillName(s.categoryId)?.toLowerCase().includes(query)
+              s.categoryId?.toLowerCase().includes(searchIn) ||
+              s.subskillId?.toLowerCase().includes(searchIn) ||
+              resolveSkillName(s.subskillId)?.toLowerCase().includes(searchIn) ||
+              resolveSkillName(s.categoryId)?.toLowerCase().includes(searchIn)
           ) ||
-          p.ngo?.name?.toLowerCase().includes(query)
+          p.ngo?.name?.toLowerCase().includes(searchIn)
         )
       }
 
-      if (unifiedMatchedIds !== null && unifiedMatchedIds.length > 0) {
+      if (effectiveWorkMode) {
+        // when work mode is specified, use client filter with cleaned query
+        result = result.filter(clientFilter)
+      } else if (unifiedMatchedIds !== null && unifiedMatchedIds.length > 0) {
         const idSet = new Set(unifiedMatchedIds)
         result = result.filter((item) => idSet.has(item.projectId))
       } else {
@@ -433,10 +514,11 @@ export function OpportunitiesBrowser() {
       })
     }
 
-    // Work mode
-    if (selectedWorkMode && selectedWorkMode !== "all") {
+    // Work mode filter – use the effective mode to reflect typed query
+    if (effectiveWorkMode && effectiveWorkMode !== "all") {
+      const normalizedTarget = normalizeWorkMode(effectiveWorkMode)
       result = result.filter((item) =>
-        item.project.workMode?.toLowerCase() === selectedWorkMode.toLowerCase()
+        normalizeWorkMode(item.project.workMode) === normalizedTarget
       )
     }
 
@@ -474,7 +556,7 @@ export function OpportunitiesBrowser() {
     }
 
     return result
-  }, [allItems, searchQuery, selectedSkills, selectedTimeCommitment, selectedWorkMode, sortBy, unifiedMatchedIds, unifiedRelevanceOrder])
+  }, [allItems, searchQuery, selectedSkills, selectedTimeCommitment, effectiveWorkMode, sortBy, unifiedMatchedIds, unifiedRelevanceOrder])
 
   const totalCount = isPersonalized ? personalizedData.length : fallbackProjects.length
   // ============================================
@@ -604,7 +686,7 @@ export function OpportunitiesBrowser() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 bg-transparent">
                 {common?.workMode || "Work Mode"}
-                {selectedWorkMode && (
+                {effectiveWorkMode && (
                   <Badge className="ml-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
                     1
                   </Badge>
@@ -630,7 +712,7 @@ export function OpportunitiesBrowser() {
                       id={`opp-mode-${mode.value}`}
                       checked={selectedWorkMode === mode.value}
                       onCheckedChange={() =>
-                        setSelectedWorkMode((prev) => (prev === mode.value ? "" : mode.value))
+                        handleWorkModeChange(selectedWorkMode === mode.value ? "" : mode.value)
                       }
                     />
                     <Label htmlFor={`opp-mode-${mode.value}`} className="text-sm font-normal cursor-pointer">

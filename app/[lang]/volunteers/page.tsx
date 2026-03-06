@@ -30,7 +30,16 @@ import { BrowseGridSkeleton } from "@/components/ui/page-skeletons"
 import { useDictionary } from "@/components/dictionary-provider"
 import type { VolunteerProfileView } from "@/lib/types"
 
-export default function VolunteersPage() {
+interface VolunteersPageProps {
+  /**
+   * When true the component is being rendered inside another layout (e.g.
+   * NGO dashboard) so we should disable the global navbar/hero that normally
+   * surrounds the search UI.
+   */
+  embed?: boolean
+}
+
+export default function VolunteersPage({ embed }: VolunteersPageProps = {}) {
   const dict = useDictionary()
   const [volunteers, setVolunteers] = useState<VolunteerProfileView[]>([])
   const [loading, setLoading] = useState(true)
@@ -362,11 +371,13 @@ export default function VolunteersPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+      {!embed && <Navbar />}
 
       <main className="flex-1">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
+        {!embed && (
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
+        )
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -377,7 +388,8 @@ export default function VolunteersPage() {
               </p>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         <div className="container mx-auto px-4 md:px-6 py-8">
           {/* Search and Controls */}

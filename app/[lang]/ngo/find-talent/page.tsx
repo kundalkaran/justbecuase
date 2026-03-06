@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth"
 import { getDictionary } from "@/app/[lang]/dictionaries"
 import type { Locale } from "@/lib/i18n-config"
 import { getNGOProfile, browseVolunteers, getNGOSubscriptionStatus } from "@/lib/actions"
+import React from "react"
+import VolunteersPage from "../../volunteers/page"
 
 export default async function NGOFindTalentPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
@@ -69,7 +71,11 @@ export default async function NGOFindTalentPage({ params }: { params: Promise<{ 
             </p>
           </div>
 
-         
+          {/* client component handles search bar + volunteer list */}
+          <React.Suspense fallback={<p>Loading…</p>}>
+            {/* the path is relative to this file */}
+            <VolunteersPage embed />
+          </React.Suspense>
     </main>
   )
 }

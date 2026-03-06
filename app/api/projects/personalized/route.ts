@@ -157,7 +157,25 @@ export async function GET(request: NextRequest) {
       ngoCoordMap,
     )
 
-    const serialized = serializeDocuments(ranked)
+    // If too few personalized results, fall back to all active projects
+    // This prevents showing 2 opportunities when 16 are available
+    let finalOpportunities = ranked
+    if (ranked.length < 8 && allProjects.length > ranked.length) {
+      // Return all active projects as fallback (no personalization)
+      return NextResponse.json({
+        success: true,
+        opportunities: serializeDocuments(allProjects),
+        meta: {
+          total: allProjects.length,
+          totalProjects: allProjects.length,
+          hasCoordinates: !!volunteerCoords,
+          personalized: false,
+          took: Date.now() - startTime,
+        },
+      })
+    }
+
+    const serialized = serializeDocuments(finalOpportunities)
 
     return NextResponse.json({
       success: true,
