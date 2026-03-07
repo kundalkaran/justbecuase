@@ -374,30 +374,29 @@ export default function VolunteersPage({ embed }: VolunteersPageProps = {}) {
   )
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={embed ? "" : "min-h-screen flex flex-col bg-background"}>
       {!embed && <Navbar />}
 
-      <main className="flex-1">
+      <main className={embed ? "" : "flex-1"}>
         {/* Hero Section */}
         {!embed && (
           <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
-        )
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                {dict.volunteersListing?.title || "Find Skilled Impact Agents"}
-              </h1>
-              <p className="text-lg text-muted-foreground mb-8">
-                {dict.volunteersListing?.subtitle || "Connect with talented professionals ready to contribute their skills to your cause"}
-              </p>
+            <div className="container mx-auto px-4 md:px-6">
+              <div className="max-w-3xl mx-auto text-center">
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  {dict.volunteersListing?.title || "Find Skilled Impact Agents"}
+                </h1>
+                <p className="text-lg text-muted-foreground mb-8">
+                  {dict.volunteersListing?.subtitle || "Connect with talented professionals ready to contribute their skills to your cause"}
+                </p>
+              </div>
             </div>
-          </div>
           </div>
         )}
 
-        <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className={embed ? "py-0" : "container mx-auto px-4 md:px-6 py-8"}>
           {/* Search and Controls */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
               <UnifiedSearchBar
                 defaultType="volunteer"
@@ -554,7 +553,7 @@ export default function VolunteersPage({ embed }: VolunteersPageProps = {}) {
         </div>
       </main>
 
-      <Footer />
+      {!embed && <Footer />}
     </div>
   )
 }
