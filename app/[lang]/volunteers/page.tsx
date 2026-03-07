@@ -283,16 +283,25 @@ export default function VolunteersPage({ embed }: VolunteersPageProps = {}) {
           value={selectedWorkMode || "all"}
           onValueChange={(value) => setSelectedWorkMode(value === "all" ? "" : value)}
         >
+          {/*
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="all" id="mode-all" />
             <Label htmlFor="mode-all" className="text-sm font-normal cursor-pointer">
               {dict.volunteersListing?.any || "Any"}
             </Label>
           </div>
+          */}
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="remote" id="mode-remote" />
             <Label htmlFor="mode-remote" className="text-sm font-normal cursor-pointer">
               {dict.volunteersListing?.remote || "Remote"}
+            </Label>
+          </div>
+          {/*
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="hybrid" id="mode-hybrid" />
+            <Label htmlFor="mode-hybrid" className="text-sm font-normal cursor-pointer">
+              {dict.volunteersListing?.hybridMode || "Hybrid"}
             </Label>
           </div>
           <div className="flex items-center space-x-2">
@@ -301,12 +310,7 @@ export default function VolunteersPage({ embed }: VolunteersPageProps = {}) {
               {dict.volunteersListing?.onSite || "On-site"}
             </Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="hybrid" id="mode-hybrid" />
-            <Label htmlFor="mode-hybrid" className="text-sm font-normal cursor-pointer">
-              {dict.volunteersListing?.hybridMode || "Hybrid"}
-            </Label>
-          </div>
+          */}
         </RadioGroup>
       </div>
 

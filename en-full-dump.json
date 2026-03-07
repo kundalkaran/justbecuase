@@ -62,7 +62,7 @@
     "oneHourCall": "1-hour call",
     "active": "Active",
     "remote": "Remote",
-    "onSite": "On-site",
+    // "onSite": "On-site",
     "recently": "Recently",
     "verifiedPartner": "Verified Partner",
     "view": "View",
@@ -1555,7 +1555,7 @@
     "hours10to20": "10-20 hours/week",
     "hours20plus": "20+ hours/week",
     "remote": "Remote",
-    "onSite": "On-site",
+    // "onSite": "On-site",
     "hybrid": "Hybrid",
     "recently": "Recently",
     "ngoFallback": "NGO"

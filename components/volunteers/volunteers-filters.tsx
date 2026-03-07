@@ -135,18 +135,20 @@ export function VolunteersFilters() {
                 Remote
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="onsite" id="mode-onsite" />
-              <Label htmlFor="mode-onsite" className="text-sm font-normal cursor-pointer">
-                On-site
-              </Label>
-            </div>
+            {/*
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="hybrid" id="mode-hybrid" />
               <Label htmlFor="mode-hybrid" className="text-sm font-normal cursor-pointer">
                 Hybrid
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="onsite" id="mode-onsite" />
+              <Label htmlFor="mode-onsite" className="text-sm font-normal cursor-pointer">
+                On-site
+              </Label>
+            </div>
+            */}
           </RadioGroup>
         </div>
 
