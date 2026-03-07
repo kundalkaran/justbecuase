@@ -50,7 +50,7 @@ export default function VolunteerProfileEditPage() {
     linkedinUrl: "",
     portfolioUrl: "",
     hoursPerWeek: "5-10",
-    workMode: "remote" as "remote" | "onsite" | "hybrid",
+    workMode: "remote" as "remote" , //| "onsite" | "hybrid",
   })
 
   // Get location using browser geolocation + Nominatim (OpenStreetMap) — state/region level
@@ -685,7 +685,7 @@ export default function VolunteerProfileEditPage() {
                         <Label>{dict.volunteer?.common?.workMode || "Work Mode"}</Label>
                         <Select
                           value={formData.workMode}
-                          onValueChange={(value) => setFormData({ ...formData, workMode: value as "remote" | "onsite" | "hybrid" })}
+                          onValueChange={(value) => setFormData({ ...formData, workMode: value as "remote" })} //| "onsite" | "hybrid" })}
                         >
                           <SelectTrigger>
                             <SelectValue />
