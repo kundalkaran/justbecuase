@@ -27,7 +27,7 @@ export function Testimonials() {
 
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {testimonials.map((testimonial, index) => (
+          {(testimonials as any[]).map((testimonial, index) => (
             <div 
               key={testimonial.id}
               className={`group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1 ${
