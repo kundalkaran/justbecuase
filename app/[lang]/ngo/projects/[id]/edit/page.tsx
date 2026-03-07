@@ -152,7 +152,7 @@ export default function EditProjectPage({ params }: Props) {
         timeCommitment: formData.timeCommitment,
         duration: formData.duration,
         projectType: formData.projectType,
-        workMode: formData.workMode,
+        workMode: "remote" as "remote",
         location: formData.location || undefined,
         causes: formData.causes,
         deadline: formData.deadline ? new Date(formData.deadline) : undefined,
