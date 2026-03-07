@@ -42,14 +42,9 @@ import {
   TrendingUp,
   CheckCircle,
   Zap,
-  Bookmark,
-  GraduationCap,
-  Heart,
 } from "lucide-react"
 import { UnifiedSearchBar } from "@/components/unified-search-bar"
 import { useDictionary } from "@/components/dictionary-provider"
-import { toggleSaveProject } from "@/lib/actions"
-import { causes as causesList } from "@/lib/skills-data"
 // ============================================
 // TYPES
 // ============================================
@@ -97,6 +92,46 @@ interface PersonalizedOpportunity {
 }
 
 // ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Normalize work mode string for comparison: remove hyphens & spaces
+ * e.g., "on-site" → "onsite", "work from home" → "workfromhome"
+ */
+function normalizeWorkMode(mode: string | undefined): string {
+  if (!mode) return ""
+  return mode.toLowerCase().replace(/[\s\-]/g, "")
+}
+
+/**
+ * Extract work mode from search query
+ * Returns: 'remote' | 'onsite' | 'hybrid' | null
+ */
+function extractWorkModeFromQuery(query: string): string | null {
+  if (!query) return null
+  
+  const q = query.toLowerCase().trim()
+  
+  // Remote patterns
+  if (/\b(remote|virtual|online|wfh|work.?from.?home)\b/.test(q)) {
+    return "remote"
+  }
+  
+  // Onsite/office patterns
+  if (/\b(onsite|on.?site|in.?person|office|in.?office)\b/.test(q)) {
+    return "onsite"
+  }
+  
+  // Hybrid patterns
+  if (/\b(hybrid|mixed)\b/.test(q)) {
+    return "hybrid"
+  }
+  
+  return null
+}
+
+// ============================================
 // CONSTANTS
 // ============================================
 
@@ -112,14 +147,6 @@ const WORK_MODES = [
   { value: "onsite", label: "On-site" },
   { value: "hybrid", label: "Hybrid" },
 ]
-
-const EXPERIENCE_LEVELS = [
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
-  { value: "expert", label: "Expert" },
-]
-
-const PAGE_SIZE = 12
 
 // ============================================
 // MATCH SCORE BADGE
@@ -242,12 +269,8 @@ export function OpportunitiesBrowser() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [selectedTimeCommitment, setSelectedTimeCommitment] = useState<string[]>([])
   const [selectedWorkMode, setSelectedWorkMode] = useState("")
-  const [selectedExperienceLevel, setSelectedExperienceLevel] = useState("")
-  const [selectedCauses, setSelectedCauses] = useState<string[]>([])
+  const [autoWorkMode, setAutoWorkMode] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("best-match")
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [savedProjects, setSavedProjects] = useState<Set<string>>(new Set())
-  const [savingProject, setSavingProject] = useState<string | null>(null)
 
   // ---- UNIFIED SEARCH ----
   const [unifiedMatchedIds, setUnifiedMatchedIds] = useState<string[] | null>(null)
@@ -298,6 +321,26 @@ export function OpportunitiesBrowser() {
     }, 300)
 
     return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // ---- EXTRACT AND APPLY WORK MODE FROM SEARCH QUERY ----
+  // derive a filter from the free‑text query; when the query contains a
+  // recognised mode we automatically select it and remember that the
+  // value was auto‑derived so the user can override it manually later.
+  useEffect(() => {
+    const extracted = extractWorkModeFromQuery(searchQuery)
+
+    if (extracted) {
+      // only update state when the auto-derived value actually changes
+      if (autoWorkMode !== extracted) {
+        setSelectedWorkMode(extracted)
+        setAutoWorkMode(extracted)
+      }
+    } else if (autoWorkMode !== null) {
+      // the text no longer mentions a mode we previously injected
+      setSelectedWorkMode("")
+      setAutoWorkMode(null)
+    }
   }, [searchQuery])
 
   useEffect(() => {
@@ -357,42 +400,29 @@ export function OpportunitiesBrowser() {
     )
   }
 
-  const toggleCause = (cause: string) => {
-    setSelectedCauses((prev) =>
-      prev.includes(cause) ? prev.filter((c) => c !== cause) : [...prev, cause]
-    )
-  }
-
-  const handleSaveProject = async (projectId: string) => {
-    setSavingProject(projectId)
-    try {
-      const result = await toggleSaveProject(projectId)
-      if (result.success) {
-        setSavedProjects((prev) => {
-          const next = new Set(prev)
-          if (result.data?.isSaved) {
-            next.add(projectId)
-          } else {
-            next.delete(projectId)
-          }
-          return next
-        })
-      }
-    } catch {}
-    setSavingProject(null)
+  const handleWorkModeChange = (mode: string) => {
+    setSelectedWorkMode(mode)
+    // a manual override clears any previous auto-derived mode so the
+    // query no longer circulates updates back to the UI
+    setAutoWorkMode(null)
   }
 
   const clearFilters = () => {
     setSelectedSkills([])
     setSelectedTimeCommitment([])
     setSelectedWorkMode("")
-    setSelectedExperienceLevel("")
-    setSelectedCauses([])
+    setAutoWorkMode(null)
     setSearchQuery("")
   }
 
+  // derive a work-mode filter that takes the query into account so the
+  // UI and filtering behave instantaneously instead of waiting for the
+  // effect to run.
+  const effectiveWorkMode =
+    selectedWorkMode || extractWorkModeFromQuery(searchQuery) || ""
+
   const hasActiveFilters =
-    selectedSkills.length > 0 || selectedTimeCommitment.length > 0 || selectedWorkMode !== "" || selectedExperienceLevel !== "" || selectedCauses.length > 0
+    selectedSkills.length > 0 || selectedTimeCommitment.length > 0 || effectiveWorkMode !== ""
 
   // ---- UNIFIED DATA SHAPE ----
   const allItems = useMemo(() => {
@@ -428,23 +458,29 @@ export function OpportunitiesBrowser() {
     // Text search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
+      const cleanedQuery = query.replace(/\b(remote|onsite|hybrid|virtual|online|wfh|work.?from.?home)\b/gi, '').trim()
+
       const clientFilter = (item: typeof result[number]) => {
         const p = item.project
+        const searchIn = cleanedQuery
         return (
-          p.title?.toLowerCase().includes(query) ||
-          p.description?.toLowerCase().includes(query) ||
+          p.title?.toLowerCase().includes(searchIn) ||
+          p.description?.toLowerCase().includes(searchIn) ||
           p.skillsRequired?.some(
             (s) =>
-              s.categoryId?.toLowerCase().includes(query) ||
-              s.subskillId?.toLowerCase().includes(query) ||
-              resolveSkillName(s.subskillId)?.toLowerCase().includes(query) ||
-              resolveSkillName(s.categoryId)?.toLowerCase().includes(query)
+              s.categoryId?.toLowerCase().includes(searchIn) ||
+              s.subskillId?.toLowerCase().includes(searchIn) ||
+              resolveSkillName(s.subskillId)?.toLowerCase().includes(searchIn) ||
+              resolveSkillName(s.categoryId)?.toLowerCase().includes(searchIn)
           ) ||
-          p.ngo?.name?.toLowerCase().includes(query)
+          p.ngo?.name?.toLowerCase().includes(searchIn)
         )
       }
 
-      if (unifiedMatchedIds !== null && unifiedMatchedIds.length > 0) {
+      if (effectiveWorkMode) {
+        // when work mode is specified, use client filter with cleaned query
+        result = result.filter(clientFilter)
+      } else if (unifiedMatchedIds !== null && unifiedMatchedIds.length > 0) {
         const idSet = new Set(unifiedMatchedIds)
         result = result.filter((item) => idSet.has(item.projectId))
       } else {
@@ -478,26 +514,12 @@ export function OpportunitiesBrowser() {
       })
     }
 
-    // Work mode
-    if (selectedWorkMode && selectedWorkMode !== "all") {
+    // Work mode filter – use the effective mode to reflect typed query
+    if (effectiveWorkMode && effectiveWorkMode !== "all") {
+      const normalizedTarget = normalizeWorkMode(effectiveWorkMode)
       result = result.filter((item) =>
-        item.project.workMode?.toLowerCase() === selectedWorkMode.toLowerCase()
+        normalizeWorkMode(item.project.workMode) === normalizedTarget
       )
-    }
-
-    // Experience level
-    if (selectedExperienceLevel) {
-      result = result.filter((item) =>
-        item.project.experienceLevel?.toLowerCase() === selectedExperienceLevel.toLowerCase()
-      )
-    }
-
-    // Causes
-    if (selectedCauses.length > 0) {
-      result = result.filter((item) => {
-        const projectCauses = item.project.causes || []
-        return selectedCauses.some((c) => projectCauses.includes(c))
-      })
     }
 
     // Sort
@@ -534,15 +556,8 @@ export function OpportunitiesBrowser() {
     }
 
     return result
-  }, [allItems, searchQuery, selectedSkills, selectedTimeCommitment, selectedWorkMode, selectedExperienceLevel, selectedCauses, sortBy, unifiedMatchedIds, unifiedRelevanceOrder])
+  }, [allItems, searchQuery, selectedSkills, selectedTimeCommitment, effectiveWorkMode, sortBy, unifiedMatchedIds, unifiedRelevanceOrder])
 
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [searchQuery, selectedSkills, selectedTimeCommitment, selectedWorkMode, selectedExperienceLevel, selectedCauses, sortBy])
-
-  const visibleItems = filteredItems.slice(0, visibleCount)
-  const hasMore = visibleCount < filteredItems.length
   const totalCount = isPersonalized ? personalizedData.length : fallbackProjects.length
   // ============================================
   // RENDER
@@ -671,7 +686,7 @@ export function OpportunitiesBrowser() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 bg-transparent">
                 {common?.workMode || "Work Mode"}
-                {selectedWorkMode && (
+                {effectiveWorkMode && (
                   <Badge className="ml-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
                     1
                   </Badge>
@@ -697,7 +712,7 @@ export function OpportunitiesBrowser() {
                       id={`opp-mode-${mode.value}`}
                       checked={selectedWorkMode === mode.value}
                       onCheckedChange={() =>
-                        setSelectedWorkMode((prev) => (prev === mode.value ? "" : mode.value))
+                        handleWorkModeChange(selectedWorkMode === mode.value ? "" : mode.value)
                       }
                     />
                     <Label htmlFor={`opp-mode-${mode.value}`} className="text-sm font-normal cursor-pointer">
@@ -716,83 +731,6 @@ export function OpportunitiesBrowser() {
               {common?.clearAll || "Clear all"}
             </Button>
           )}
-        </div>
-
-          {/* Experience Level */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 bg-transparent">
-                <GraduationCap className="h-3.5 w-3.5 mr-1.5" />
-                {common?.experienceLevel || "Experience"}
-                {selectedExperienceLevel && (
-                  <Badge className="ml-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                    1
-                  </Badge>
-                )}
-                <ChevronDown className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-44 p-3" align="start">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="opp-exp-all"
-                    checked={selectedExperienceLevel === ""}
-                    onCheckedChange={() => setSelectedExperienceLevel("")}
-                  />
-                  <Label htmlFor="opp-exp-all" className="text-sm font-normal cursor-pointer">
-                    {common?.any || "Any"}
-                  </Label>
-                </div>
-                {EXPERIENCE_LEVELS.map((level) => (
-                  <div key={level.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`opp-exp-${level.value}`}
-                      checked={selectedExperienceLevel === level.value}
-                      onCheckedChange={() =>
-                        setSelectedExperienceLevel((prev) => (prev === level.value ? "" : level.value))
-                      }
-                    />
-                    <Label htmlFor={`opp-exp-${level.value}`} className="text-sm font-normal cursor-pointer capitalize">
-                      {level.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Causes */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 bg-transparent">
-                <Heart className="h-3.5 w-3.5 mr-1.5" />
-                {common?.causes || "Causes"}
-                {selectedCauses.length > 0 && (
-                  <Badge className="ml-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                    {selectedCauses.length}
-                  </Badge>
-                )}
-                <ChevronDown className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-3" align="start">
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {causesList.map((cause) => (
-                  <div key={cause.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`opp-cause-${cause.id}`}
-                      checked={selectedCauses.includes(cause.id)}
-                      onCheckedChange={() => toggleCause(cause.id)}
-                    />
-                    <Label htmlFor={`opp-cause-${cause.id}`} className="text-sm font-normal cursor-pointer">
-                      {cause.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
 
         {/* Active Filter Badges */}
@@ -816,21 +754,6 @@ export function OpportunitiesBrowser() {
                 <button onClick={() => setSelectedWorkMode("")}><X className="h-3 w-3" /></button>
               </Badge>
             )}
-            {selectedExperienceLevel && (
-              <Badge variant="secondary" className="flex items-center gap-1 text-xs capitalize">
-                {selectedExperienceLevel}
-                <button onClick={() => setSelectedExperienceLevel("")}><X className="h-3 w-3" /></button>
-              </Badge>
-            )}
-            {selectedCauses.map((causeId) => {
-              const causeName = causesList.find((c) => c.id === causeId)?.name || causeId
-              return (
-                <Badge key={causeId} variant="secondary" className="flex items-center gap-1 text-xs">
-                  {causeName}
-                  <button onClick={() => toggleCause(causeId)}><X className="h-3 w-3" /></button>
-                </Badge>
-              )
-            })}
           </div>
         )}
 
@@ -838,9 +761,9 @@ export function OpportunitiesBrowser() {
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
             {opp?.showingOf || "Showing"}{" "}
-            <span className="font-medium text-foreground">{Math.min(visibleCount, filteredItems.length)}</span>{" "}
+            <span className="font-medium text-foreground">{filteredItems.length}</span>{" "}
             {opp?.of || "of"}{" "}
-            {filteredItems.length} {opp?.opportunitiesLabel || "opportunities"}
+            {totalCount} {opp?.opportunitiesLabel || "opportunities"}
             {isUnifiedSearching && <Loader2 className="inline h-3.5 w-3.5 animate-spin ml-2" />}
           </p>
         </div>
@@ -886,28 +809,16 @@ export function OpportunitiesBrowser() {
             )}
           </div>
         ) : (
-          <>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visibleItems.map((item) => {
+            {filteredItems.map((item) => {
               const project = item.project
               const projectId = item.projectId
-              const isSaved = savedProjects.has(projectId)
 
               return (
                 <Card key={projectId} className="hover:shadow-lg transition-all duration-200 group relative">
-                  {/* Save/Bookmark button */}
-                  <button
-                    onClick={() => handleSaveProject(projectId)}
-                    disabled={savingProject === projectId}
-                    className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-background/80 backdrop-blur hover:bg-background border border-border/50 transition-colors"
-                    aria-label={isSaved ? "Unsave" : "Save"}
-                  >
-                    <Bookmark className={`h-4 w-4 transition-colors ${isSaved ? "fill-primary text-primary" : "text-muted-foreground hover:text-foreground"}`} />
-                  </button>
-
                   <CardContent className="p-5">
                     {/* Header */}
-                    <div className="flex items-start justify-between mb-3 pr-8">
+                    <div className="flex items-start justify-between mb-3">
                       <Badge variant="outline" className="text-xs capitalize">
                         {project.projectType}
                       </Badge>
@@ -1034,18 +945,6 @@ export function OpportunitiesBrowser() {
               )
             })}
           </div>
-
-          {hasMore && (
-            <div className="flex justify-center mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-              >
-                Load More ({filteredItems.length - visibleCount} remaining)
-              </Button>
-            </div>
-          )}
-          </>
         )}
       </div>
     </TooltipProvider>

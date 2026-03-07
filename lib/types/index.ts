@@ -10,7 +10,7 @@ import { ObjectId } from "mongodb"
 export type UserRole = "volunteer" | "ngo" | "admin"
 
 export type VolunteerType = "free" | "paid" | "both"
-export type WorkMode = "remote" | "onsite" | "hybrid"
+export type WorkMode = "remote" // | "onsite" | "hybrid"
 export type Availability = "weekdays" | "weekends" | "evenings" | "flexible"
 export type ExperienceLevel = "beginner" | "intermediate" | "expert"
 export type SkillPriority = "must-have" | "nice-to-have"
