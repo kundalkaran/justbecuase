@@ -692,8 +692,10 @@ export default function VolunteerProfileEditPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="remote">{dict.volunteer?.common?.remote || "Remote"}</SelectItem>
+                            {/*
                             <SelectItem value="onsite">{dict.volunteer?.common?.onSite || "On-site"}</SelectItem>
                             <SelectItem value="hybrid">{dict.volunteer?.common?.hybrid || "Hybrid"}</SelectItem>
+                            */}
                           </SelectContent>
                         </Select>
                       </div>
